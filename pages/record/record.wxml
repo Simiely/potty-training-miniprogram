@@ -23,16 +23,16 @@
       <view class="title">📊 今日统计</view>
       <view class="sub">{{todayLabel}}</view>
     </view>
-    <view class="stat-grid">
-      <view class="stat-row">
-        <view class="stat-box" style="background:#E3F2FD"><view class="num" style="color:#1976D2">{{stats.pee}}</view><view class="lbl">💧 小便</view></view>
-        <view class="stat-box" style="background:#FFF3E0"><view class="num" style="color:#E64A19">{{stats.poop}}</view><view class="lbl">💩 大便</view></view>
+      <view class="stat-grid">
+        <view class="stat-row">
+          <view class="stat-box pee"><view class="num">{{stats.pee}}</view><view class="lbl">💧 小便</view></view>
+          <view class="stat-box poop"><view class="num">{{stats.poop}}</view><view class="lbl">💩 大便</view></view>
+        </view>
+        <view class="stat-row">
+          <view class="stat-box underwear"><view class="num">{{stats.underwear}}</view><view class="lbl">🩲 换小内裤</view></view>
+          <view class="stat-box diaper"><view class="num">{{stats.diaper}}</view><view class="lbl">👶 换尿不湿</view></view>
+        </view>
       </view>
-      <view class="stat-row">
-        <view class="stat-box" style="background:#E8F5E9"><view class="num" style="color:#388E3C">{{stats.underwear}}</view><view class="lbl">🩲 换小内裤</view></view>
-        <view class="stat-box" style="background:#F3E5F5"><view class="num" style="color:#7B1FA2">{{stats.diaper}}</view><view class="lbl">👶 换尿不湿</view></view>
-      </view>
-    </view>
 
     <block wx:if="{{timeline.length === 0}}">
       <view class="empty-center">🍼 今天还没有记录哦，点击上方按钮开始记录吧！</view>
@@ -62,7 +62,7 @@
     </block>
 
     <block wx:else>
-      <view class="pred-window" style="background:{{prediction.confBg}};border-color:{{prediction.confBorder}}">
+      <view class="pred-window conf-{{prediction.confidence}}">
         <view class="hint">
           <block wx:if="{{prediction.windowState === 'active'}}">🚨 现在是排便时间窗口！</block>
           <block wx:elif="{{prediction.windowState === 'passed'}}">⏰ 预测窗口已过，请留意宝宝状态</block>
@@ -73,9 +73,9 @@
       <view class="pred-stats">
         <view class="pred-stat"><view class="v" style="color:#FF8A65">{{prediction.avgHours}}h</view><view class="k">平均间隔</view></view>
         <view class="pred-stat"><view class="v" style="color:#FFAB91">±{{prediction.stdDevHours}}h</view><view class="k">标准差</view></view>
-        <view class="pred-stat"><view class="v" style="color:#8D6E63">{{prediction.sampleSize}}</view><view class="k">样本数</view></view>
+        <view class="pred-stat"><view class="v muted">{{prediction.sampleSize}}</view><view class="k">样本数</view></view>
       </view>
-      <view class="confidence" style="background:{{prediction.confBg}}">
+      <view class="confidence conf-{{prediction.confidence}}">
         <view class="conf-chip">{{prediction.confLabel}}</view>
         <view class="desc">{{prediction.confDesc}}</view>
       </view>

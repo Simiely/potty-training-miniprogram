@@ -4,7 +4,7 @@
   flex-direction: column;
 }
 .lock-screen {
-  background: linear-gradient(180deg, #FFF3E0 0%, #FFD9B3 100%);
+  background: var(--lock-bg);
 }
 .statusbar {
   width: 100%;
@@ -30,12 +30,12 @@
 .lock-appname {
   font-size: 32rpx;
   font-weight: 700;
-  color: #5D4037;
+  color: var(--text-main);
   margin-top: 24rpx;
 }
 .lock-prompt {
   font-size: 26rpx;
-  color: #8D6E63;
+  color: var(--text-muted);
   margin-top: 12rpx;
 }
 
@@ -106,23 +106,23 @@
   width: 150rpx;
   height: 150rpx;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--key-bg);
   font-size: 52rpx;
   font-weight: 600;
-  color: #4E342E;
+  color: var(--key-text);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .key:active {
-  background: #fff;
+  background: var(--key-active);
 }
 .key.empty {
   background: transparent;
 }
 .key.del {
   background: transparent;
-  color: #8D6E63;
+  color: var(--text-muted);
   font-size: 48rpx;
 }
 
@@ -131,7 +131,7 @@
 }
 .lock-foot .lk {
   font-size: 24rpx;
-  color: #8D6E63;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   gap: 8rpx;

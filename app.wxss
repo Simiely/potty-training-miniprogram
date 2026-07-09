@@ -1,14 +1,81 @@
 /* ============================================================
    全局样式（各页面通用）
    ============================================================ */
+
+/* 主题变量：浅色为默认值；深色随系统「深色模式」自动切换。
+   所有页面/组件的颜色都引用这些变量，改主题只动这一处。 */
 page {
-  background: #FFF3E0;
+  background: var(--page-bg);
   font-family: -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif;
-  color: #4E342E;
+  color: var(--text-main);
   -webkit-font-smoothing: antialiased;
+
+  /* —— 浅色（默认） —— */
+  --page-bg: #FFF3E0;
+  --card-bg: #FFFFFF;
+  --card-shadow: 0 2rpx 6rpx rgba(78, 52, 46, 0.08), 0 8rpx 24rpx rgba(78, 52, 46, 0.05);
+  --text-main: #4E342E;
+  --text-muted: #8D6E63;
+  --border: #F0E4D8;
+  --trend-bg: #F5F5F5;
+  --active-bg: #F5F5F5;
+  --today-bg: #FFF8E1;
+  --today-active-bg: #FFF3CD;
+  --danger: #E64A19;
+  --danger-border: #FFCDD2;
+  --icon-muted: #bdbdbd;
+  --key-bg: rgba(255, 255, 255, 0.72);
+  --key-text: #4E342E;
+  --key-active: #FFFFFF;
+  --chip-bg: #E3F2FD;
+  --chip-text: #E65100;
+  --chip-hot-bg: #FFE0B2;
+  --prog-bg: #FFE0B2;
+  --lock-bg: linear-gradient(180deg, #FFF3E0 0%, #FFD9B3 100%);
+  --stat-pee-bg: #E3F2FD;       --stat-pee-text: #1976D2;
+  --stat-poop-bg: #FFF3E0;       --stat-poop-text: #E64A19;
+  --stat-underwear-bg: #E8F5E9;  --stat-underwear-text: #388E3C;
+  --stat-diaper-bg: #F3E5F5;     --stat-diaper-text: #7B1FA2;
+  --conf-high-bg: #E8F5E9;       --conf-high-border: #66BB6A;
+  --conf-medium-bg: #FFF8E1;     --conf-medium-border: #FFA726;
+  --conf-low-bg: #FFEBEE;        --conf-low-border: #EF9A9A;
 }
 
-/* 自定义渐变导航栏 */
+/* —— 深色（跟随系统） —— 暖色调暗色，避免纯黑、保留品牌暖橙感 */
+@media (prefers-color-scheme: dark) {
+  page {
+    --page-bg: #1E1712;
+    --card-bg: #2A221C;
+    --card-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.35), 0 8rpx 24rpx rgba(0, 0, 0, 0.28);
+    --text-main: #F1E7DF;
+    --text-muted: #B9A896;
+    --border: #3A302A;
+    --trend-bg: #332A22;
+    --active-bg: #332A22;
+    --today-bg: rgba(255, 167, 38, 0.14);
+    --today-active-bg: rgba(255, 167, 38, 0.22);
+    --danger: #FF8A65;
+    --danger-border: rgba(255, 138, 101, 0.4);
+    --icon-muted: #8A8076;
+    --key-bg: rgba(255, 255, 255, 0.10);
+    --key-text: #F1E7DF;
+    --key-active: rgba(255, 255, 255, 0.18);
+    --chip-bg: rgba(66, 165, 245, 0.16);
+    --chip-text: #7FB8F5;
+    --chip-hot-bg: rgba(255, 138, 101, 0.18);
+    --prog-bg: rgba(255, 138, 101, 0.25);
+    --lock-bg: linear-gradient(180deg, #241C16 0%, #2E2018 100%);
+    --stat-pee-bg: rgba(66, 165, 245, 0.16);        --stat-pee-text: #7FB8F5;
+    --stat-poop-bg: rgba(255, 112, 67, 0.16);        --stat-poop-text: #FF9E7A;
+    --stat-underwear-bg: rgba(102, 187, 106, 0.16);  --stat-underwear-text: #8FD493;
+    --stat-diaper-bg: rgba(186, 104, 200, 0.16);     --stat-diaper-text: #D49BE0;
+    --conf-high-bg: rgba(102, 187, 106, 0.16);       --conf-high-border: #66BB6A;
+    --conf-medium-bg: rgba(255, 167, 38, 0.16);      --conf-medium-border: #FFA726;
+    --conf-low-bg: rgba(239, 154, 154, 0.16);        --conf-low-border: #EF9A9A;
+  }
+}
+
+/* 自定义渐变导航栏（暖橙渐变，深浅一致） */
 .appbar {
   background: linear-gradient(135deg, #FF8A65 0%, #FFAB91 100%);
   padding: 0 32rpx 28rpx;
@@ -23,9 +90,9 @@ page {
 
 /* 卡片 */
 .card {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 28rpx;
-  box-shadow: 0 2rpx 6rpx rgba(78,52,46,0.08), 0 8rpx 24rpx rgba(78,52,46,0.05);
+  box-shadow: var(--card-shadow);
   padding: 32rpx;
   margin: 0 24rpx 28rpx;
 }
@@ -36,12 +103,12 @@ page {
   margin-bottom: 24rpx;
 }
 .card-head .title { font-size: 32rpx; font-weight: 700; }
-.card-head .sub { font-size: 24rpx; color: #8D6E63; }
+.card-head .sub { font-size: 24rpx; color: var(--text-muted); }
 
-/* 通用按钮渐变 */
+/* 通用按钮渐变（语义色，深浅一致） */
 .grad-pee { background: linear-gradient(135deg, #64B5F6 0%, #42A5F5 100%); box-shadow: 0 8rpx 28rpx rgba(66,165,245,0.35); }
 .grad-poop { background: linear-gradient(135deg, #FF8A65 0%, #FF7043 100%); box-shadow: 0 8rpx 28rpx rgba(255,138,101,0.35); }
 .grad-underwear { background: linear-gradient(135deg, #81C784 0%, #66BB6A 100%); box-shadow: 0 8rpx 28rpx rgba(102,187,106,0.35); }
 .grad-diaper { background: linear-gradient(135deg, #CE93D8 0%, #BA68C8 100%); box-shadow: 0 8rpx 28rpx rgba(186,104,200,0.35); }
 
-.text-secondary { color: #8D6E63; }
+.text-secondary { color: var(--text-muted); }

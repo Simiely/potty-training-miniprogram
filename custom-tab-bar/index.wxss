@@ -64,3 +64,20 @@
   color: #FF8A65;
   font-weight: 600;
 }
+
+/* 深色模式：跟随系统，暖色暗调 */
+@media (prefers-color-scheme: dark) {
+  .tabbar {
+    background: #221B16;
+    border-top-color: #3A302A;
+  }
+  .label {
+    color: #B0A597;
+  }
+  .tab.active .label {
+    color: #FF8A65;
+  }
+  .pill {
+    background: rgba(255, 138, 101, 0.28);
+  }
+}

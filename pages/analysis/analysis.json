@@ -2,5 +2,5 @@
   "navigationStyle": "custom",
   "navigationBarTitleText": "分析",
   "enablePullDownRefresh": true,
-  "backgroundColor": "#FFF3E0"
+  "backgroundColor": "@bgColor"
 }

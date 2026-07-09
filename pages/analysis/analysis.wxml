@@ -43,7 +43,7 @@
     </view>
 
     <view class="chart-data">
-      <view wx:for="{{chart.labels}}" wx:key="index" class="col" style="color:#1976D2">
+      <view wx:for="{{chart.labels}}" wx:key="index" class="col">
         {{chart.pee[index]}}💧
         {{chart.poop[index]}}💩
         {{chart.underwear[index]}}🩲

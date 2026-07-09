@@ -7,7 +7,9 @@
   ],
   "window": {
     "navigationStyle": "custom",
-    "backgroundColor": "#FFF3E0",
+    "backgroundColor": "@bgColor",
+    "backgroundColorTop": "@bgColorTop",
+    "backgroundColorBottom": "@bgColorBottom",
     "backgroundTextStyle": "dark",
     "navigationBarTextStyle": "white",
     "navigationBarTitleText": "宝宝如厕训练助手"
@@ -25,5 +27,7 @@
     ]
   },
   "style": "v2",
+  "darkmode": true,
+  "themeLocation": "theme.json",
   "sitemapLocation": "sitemap.json"
 }

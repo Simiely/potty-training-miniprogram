@@ -56,17 +56,25 @@
 .stat-grid { display: flex; flex-direction: column; gap: 22rpx; margin-bottom: 24rpx; }
 .stat-row { display: flex; gap: 22rpx; }
 .stat-box { flex: 1; text-align: center; padding: 26rpx; border-radius: 28rpx; }
+.stat-box.pee { background: var(--stat-pee-bg); }
+.stat-box.pee .num { color: var(--stat-pee-text); }
+.stat-box.poop { background: var(--stat-poop-bg); }
+.stat-box.poop .num { color: var(--stat-poop-text); }
+.stat-box.underwear { background: var(--stat-underwear-bg); }
+.stat-box.underwear .num { color: var(--stat-underwear-text); }
+.stat-box.diaper { background: var(--stat-diaper-bg); }
+.stat-box.diaper .num { color: var(--stat-diaper-text); }
 .stat-box .num { font-size: 56rpx; font-weight: 700; line-height: 1.1; }
-.stat-box .lbl { font-size: 24rpx; color: #8D6E63; margin-top: 4rpx; }
+.stat-box .lbl { font-size: 24rpx; color: var(--text-muted); margin-top: 4rpx; }
 
-.empty-center { text-align: center; padding: 64rpx 40rpx; color: #8D6E63; font-size: 26rpx; line-height: 1.8; }
+.empty-center { text-align: center; padding: 64rpx 40rpx; color: var(--text-muted); font-size: 26rpx; line-height: 1.8; }
 
 /* 时间线 */
 .tl-divider {
   display: flex; align-items: center; gap: 20rpx; margin-bottom: 20rpx;
-  color: #8D6E63; font-size: 24rpx;
+  color: var(--text-muted); font-size: 24rpx;
 }
-.tl-divider::before, .tl-divider::after { content: ''; flex: 1; height: 1rpx; background: #F0E4D8; }
+.tl-divider::before, .tl-divider::after { content: ''; flex: 1; height: 1rpx; background: var(--border); }
 .timeline { position: relative; padding-left: 32rpx; }
 .tl-item { position: relative; padding-bottom: 24rpx; }
 .tl-item:last-child { padding-bottom: 0; }
@@ -84,22 +92,28 @@
 .t-diaper::before { background: #BA68C8; }
 .tl-line { display: flex; align-items: center; gap: 16rpx; }
 .tl-line .name { font-size: 26rpx; font-weight: 600; }
-.tl-line .time { font-size: 22rpx; color: #8D6E63; }
+.tl-line .time { font-size: 22rpx; color: var(--text-muted); }
 
 /* 预测面板 */
 .pred-window {
   text-align: center; padding: 28rpx; border-radius: 28rpx; margin-bottom: 28rpx;
-  border: 4rpx dashed #66BB6A; background: #E8F5E9;
 }
-.pred-window .hint { font-size: 24rpx; color: #8D6E63; margin-bottom: 10rpx; }
+.pred-window.conf-high { background: var(--conf-high-bg); border: 4rpx solid var(--conf-high-border); }
+.pred-window.conf-medium { background: var(--conf-medium-bg); border: 4rpx solid var(--conf-medium-border); }
+.pred-window.conf-low { background: var(--conf-low-bg); border: 4rpx solid var(--conf-low-border); }
+.pred-window .hint { font-size: 24rpx; color: var(--text-muted); margin-bottom: 10rpx; }
 .pred-window .range { font-size: 30rpx; font-weight: 700; }
 .pred-stats { display: flex; gap: 20rpx; margin-bottom: 28rpx; }
-.pred-stat { flex: 1; text-align: center; padding: 18rpx; border-radius: 24rpx; background: #F5F5F5; }
+.pred-stat { flex: 1; text-align: center; padding: 18rpx; border-radius: 24rpx; background: var(--trend-bg); }
 .pred-stat .v { font-size: 40rpx; font-weight: 700; }
-.pred-stat .k { font-size: 22rpx; color: #8D6E63; }
-.confidence { display: flex; align-items: center; gap: 18rpx; padding: 22rpx 26rpx; border-radius: 24rpx; background: #E8F5E9; }
+.pred-stat .v.muted { color: var(--text-muted); }
+.pred-stat .k { font-size: 22rpx; color: var(--text-muted); }
+.confidence { display: flex; align-items: center; gap: 18rpx; padding: 22rpx 26rpx; border-radius: 24rpx; }
+.confidence.conf-high { background: var(--conf-high-bg); }
+.confidence.conf-medium { background: var(--conf-medium-bg); }
+.confidence.conf-low { background: var(--conf-low-bg); }
 .conf-chip { font-size: 22rpx; font-weight: 600; color: #fff; background: #66BB6A; padding: 8rpx 18rpx; border-radius: 999rpx; white-space: nowrap; }
-.confidence .desc { font-size: 22rpx; color: #8D6E63; }
+.confidence .desc { font-size: 22rpx; color: var(--text-muted); }
 
-.prog { height: 16rpx; background: #FFE0B2; border-radius: 999rpx; margin-top: 32rpx; overflow: hidden; }
+.prog { height: 16rpx; background: var(--prog-bg); border-radius: 999rpx; margin-top: 32rpx; overflow: hidden; }
 .prog-bar { height: 100%; background: #FF8A65; border-radius: 999rpx; }
