@@ -1,0 +1,93 @@
+.page {
+  min-height: 100vh;
+  padding-bottom: 40rpx;
+}
+.appbar {
+  background: linear-gradient(135deg, #FF8A65 0%, #FFAB91 100%);
+  padding: 0 32rpx 28rpx;
+  text-align: center;
+}
+.appbar-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+/* 快速记录 */
+.record-grid { padding: 24rpx 24rpx 0; display: flex; flex-direction: column; gap: 22rpx; }
+.record-row { display: flex; gap: 22rpx; }
+.rec-btn {
+  flex: 1;
+  padding: 36rpx 0;
+  border-radius: 28rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+}
+.rec-btn:active { opacity: 0.92; }
+.undo-chip {
+  margin: 22rpx auto 0;
+  padding: 14rpx 32rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 138, 101, 0.15);
+  color: #E64A19;
+  font-weight: 500;
+  font-size: 26rpx;
+  width: fit-content;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+/* 今日统计 */
+.stat-grid { display: flex; flex-direction: column; gap: 22rpx; margin-bottom: 24rpx; }
+.stat-row { display: flex; gap: 22rpx; }
+.stat-box { flex: 1; text-align: center; padding: 26rpx; border-radius: 28rpx; }
+.stat-box .num { font-size: 56rpx; font-weight: 700; line-height: 1.1; }
+.stat-box .lbl { font-size: 24rpx; color: #8D6E63; margin-top: 4rpx; }
+
+.empty-center { text-align: center; padding: 64rpx 40rpx; color: #8D6E63; font-size: 26rpx; line-height: 1.8; }
+
+/* 时间线 */
+.tl-divider {
+  display: flex; align-items: center; gap: 20rpx; margin-bottom: 20rpx;
+  color: #8D6E63; font-size: 24rpx;
+}
+.tl-divider::before, .tl-divider::after { content: ''; flex: 1; height: 1rpx; background: #F0E4D8; }
+.timeline { position: relative; padding-left: 32rpx; }
+.tl-item { position: relative; padding-bottom: 24rpx; }
+.tl-item:last-child { padding-bottom: 0; }
+.tl-item::before {
+  content: ''; position: absolute; left: -26rpx; top: 10rpx;
+  width: 20rpx; height: 20rpx; border-radius: 50%; z-index: 1;
+}
+.tl-item:not(:last-child)::after {
+  content: ''; position: absolute; left: -16rpx; top: 30rpx;
+  width: 4rpx; height: calc(100% - 8rpx); background: #FFE0B2;
+}
+.t-pee::before { background: #42A5F5; }
+.t-poop::before { background: #FF7043; }
+.t-underwear::before { background: #66BB6A; }
+.t-diaper::before { background: #BA68C8; }
+.tl-line { display: flex; align-items: center; gap: 16rpx; }
+.tl-line .name { font-size: 26rpx; font-weight: 600; }
+.tl-line .time { font-size: 22rpx; color: #8D6E63; }
+
+/* 预测面板 */
+.pred-window {
+  text-align: center; padding: 28rpx; border-radius: 28rpx; margin-bottom: 28rpx;
+  border: 4rpx dashed #66BB6A; background: #E8F5E9;
+}
+.pred-window .hint { font-size: 24rpx; color: #8D6E63; margin-bottom: 10rpx; }
+.pred-window .range { font-size: 30rpx; font-weight: 700; }
+.pred-stats { display: flex; gap: 20rpx; margin-bottom: 28rpx; }
+.pred-stat { flex: 1; text-align: center; padding: 18rpx; border-radius: 24rpx; background: #F5F5F5; }
+.pred-stat .v { font-size: 40rpx; font-weight: 700; }
+.pred-stat .k { font-size: 22rpx; color: #8D6E63; }
+.confidence { display: flex; align-items: center; gap: 18rpx; padding: 22rpx 26rpx; border-radius: 24rpx; background: #E8F5E9; }
+.conf-chip { font-size: 22rpx; font-weight: 600; color: #fff; background: #66BB6A; padding: 8rpx 18rpx; border-radius: 999rpx; white-space: nowrap; }
+.confidence .desc { font-size: 22rpx; color: #8D6E63; }
+
+.prog { height: 16rpx; background: #FFE0B2; border-radius: 999rpx; margin-top: 32rpx; overflow: hidden; }
+.prog-bar { height: 100%; background: #FF8A65; border-radius: 999rpx; }

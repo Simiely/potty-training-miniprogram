@@ -1,0 +1,6 @@
+{
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "记录",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#FFF3E0"
+}

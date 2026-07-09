@@ -1,0 +1,57 @@
+<!-- 启动锁屏页：授权 → 输入固定密码一次 → 正确则进入，错误则提示 -->
+<view class="screen lock-screen">
+  <!-- 状态栏 + 胶囊占位（自定义导航） -->
+  <view class="statusbar" style="height: {{navHeight}}px;"></view>
+
+  <view class="lock-body">
+    <view class="lock-icon">🚽</view>
+    <view class="lock-appname">宝宝如厕训练助手</view>
+
+    <!-- 未授权：先微信授权 -->
+    <block wx:if="{{!authorized}}">
+      <view class="lock-prompt">需要微信授权后使用</view>
+      <button class="auth-btn" bindtap="onAuth">微信一键授权</button>
+    </block>
+
+    <!-- 已授权：输入 4 位密码 -->
+    <block wx:else>
+      <view class="lock-prompt">请输入 4 位锁屏密码</view>
+
+      <view class="lock-dots {{shaking ? 'shake' : ''}}">
+        <view
+          wx:for="{{dots}}"
+          wx:key="*this"
+          class="lock-dot {{input.length > item ? (error ? 'error' : 'filled') : ''}}"
+        ></view>
+      </view>
+      <view class="lock-error">{{error}}</view>
+
+      <view class="keypad">
+        <view class="keypad-row">
+          <view class="key" bindtap="onKey" data-k="1">1</view>
+          <view class="key" bindtap="onKey" data-k="2">2</view>
+          <view class="key" bindtap="onKey" data-k="3">3</view>
+        </view>
+        <view class="keypad-row">
+          <view class="key" bindtap="onKey" data-k="4">4</view>
+          <view class="key" bindtap="onKey" data-k="5">5</view>
+          <view class="key" bindtap="onKey" data-k="6">6</view>
+        </view>
+        <view class="keypad-row">
+          <view class="key" bindtap="onKey" data-k="7">7</view>
+          <view class="key" bindtap="onKey" data-k="8">8</view>
+          <view class="key" bindtap="onKey" data-k="9">9</view>
+        </view>
+        <view class="keypad-row">
+          <view class="key empty"></view>
+          <view class="key" bindtap="onKey" data-k="0">0</view>
+          <view class="key del" bindtap="onKey" data-k="del">⌫</view>
+        </view>
+      </view>
+
+      <view class="lock-foot">
+        <view class="lk" bindtap="onBio">🔒 使用指纹 / 面容</view>
+      </view>
+    </block>
+  </view>
+</view>

@@ -1,0 +1,51 @@
+<view class="page">
+  <view class="appbar" style="padding-top: {{navHeight}}px;">
+    <view class="appbar-title">📋 历史记录</view>
+  </view>
+
+  <block wx:if="{{groups.length === 0}}">
+    <view class="card"><view class="empty-center">📭 暂无记录，开始记录宝宝的如厕情况吧！</view></view>
+  </block>
+
+  <block wx:else>
+    <view class="card">
+      <view class="card-head">
+        <view class="title">📋 历史记录</view>
+        <view class="clear-all" bindtap="onClearAll">清空全部</view>
+      </view>
+
+      <view wx:for="{{groups}}" wx:key="date" class="group">
+        <!-- 日期行 -->
+        <view class="hist-row {{item.isToday ? 'today' : ''}}" bindtap="toggleDate" data-date="{{item.date}}">
+          <view class="hist-left">
+            <text class="date">{{item.dateLabel}}</text>
+            <text wx:if="{{item.isToday}}" class="today-chip">今天</text>
+          </view>
+          <view class="hist-right">
+            <text wx:if="{{item.poopCount > 0}}" class="mini-chip" style="background:#FFF3E0;color:#E64A19">💩{{item.poopCount}}</text>
+            <text wx:if="{{item.peeCount > 0}}" class="mini-chip" style="background:#E3F2FD;color:#1976D2">💧{{item.peeCount}}</text>
+            <text wx:if="{{item.underwearCount > 0}}" class="mini-chip" style="background:#E8F5E9;color:#388E3C">🩲{{item.underwearCount}}</text>
+            <text wx:if="{{item.diaperCount > 0}}" class="mini-chip" style="background:#F3E5F5;color:#7B1FA2">👶{{item.diaperCount}}</text>
+            <text class="arrow">{{expanded[item.date] ? '▾' : '▸'}}</text>
+          </view>
+        </view>
+
+        <!-- 展开详情 -->
+        <view wx:if="{{expanded[item.date]}}" class="hist-detail">
+          <view wx:for="{{item.records}}" wx:for-item="rec" wx:key="id" class="hd-item">
+            <view class="hd-left">
+              <view class="hd-dot" style="background:{{rec.color}}"></view>
+              <text class="hd-name">{{rec.emoji}} {{rec.label}}</text>
+              <text class="hd-time">{{rec.time}}</text>
+            </view>
+            <view class="hd-del" catchtap="onDelete" data-id="{{rec.id}}">🗑</view>
+          </view>
+        </view>
+
+        <view class="hist-sep"></view>
+      </view>
+    </view>
+  </block>
+
+  <view style="height:40rpx;"></view>
+</view>

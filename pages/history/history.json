@@ -1,0 +1,6 @@
+{
+  "navigationStyle": "custom",
+  "navigationBarTitleText": "历史",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#FFF3E0"
+}

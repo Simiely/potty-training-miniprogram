@@ -1,0 +1,56 @@
+<view class="page">
+  <view class="appbar" style="padding-top: {{navHeight}}px;">
+    <view class="appbar-title">📈 规律分析</view>
+  </view>
+
+  <view class="card">
+    <!-- 排便间隔趋势 -->
+    <view class="section-label">📏 排便间隔趋势</view>
+    <view class="trend-box">
+      <view class="trend-desc">{{trendDesc}}</view>
+      <view wx:if="{{intervals.length > 0}}" class="trend-bars">
+        <view wx:for="{{intervals}}" wx:key="index" class="trend-col">
+          <text class="bv">{{item.h}}h</text>
+          <view class="bh" style="height:{{item.pct}}%"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 常见排便时段 -->
+    <view class="section-label">⏰ 常见排便时段</view>
+    <view wx:if="{{commonTimes.length > 0}}" class="chips">
+      <view wx:for="{{commonTimes}}" wx:key="index" class="chip {{item.hot ? 'hot' : ''}}">{{item.label}}</view>
+    </view>
+    <view wx:else class="empty-center" style="padding:24rpx;">暂无足够的大便数据</view>
+
+    <!-- 近7天排便次数 -->
+    <view class="section-label">📅 近7天排便次数</view>
+    <view class="legend">
+      <view class="li"><view class="dot" style="background:#42A5F5"></view>小便</view>
+      <view class="li"><view class="dot" style="background:#FF7043"></view>大便</view>
+      <view class="li"><view class="dot" style="background:#66BB6A"></view>小内裤</view>
+      <view class="li"><view class="dot" style="background:#BA68C8"></view>尿不湿</view>
+    </view>
+
+    <view class="chart">
+      <view wx:for="{{chart.labels}}" wx:key="index" class="day">
+        <view class="bar" style="height:{{chart.bars[index].pee}}%;background:#42A5F5"></view>
+        <view class="bar" style="height:{{chart.bars[index].poop}}%;background:#FF7043"></view>
+        <view class="bar" style="height:{{chart.bars[index].underwear}}%;background:#66BB6A"></view>
+        <view class="bar" style="height:{{chart.bars[index].diaper}}%;background:#BA68C8"></view>
+        <text class="dl">{{item}}</text>
+      </view>
+    </view>
+
+    <view class="chart-data">
+      <view wx:for="{{chart.labels}}" wx:key="index" class="col" style="color:#1976D2">
+        {{chart.pee[index]}}💧
+        {{chart.poop[index]}}💩
+        {{chart.underwear[index]}}🩲
+        {{chart.diaper[index]}}👶
+      </view>
+    </view>
+  </view>
+
+  <view style="height:40rpx;"></view>
+</view>

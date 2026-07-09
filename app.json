@@ -1,0 +1,28 @@
+{
+  "pages": [
+    "pages/lock/lock",
+    "pages/record/record",
+    "pages/analysis/analysis",
+    "pages/history/history"
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#FFF3E0",
+    "backgroundTextStyle": "dark",
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "宝宝如厕训练助手"
+  },
+  "tabBar": {
+    "color": "#9E9E9E",
+    "selectedColor": "#FF8A65",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/record/record", "text": "记录", "iconPath": "assets/tab-record.png", "selectedIconPath": "assets/tab-record-active.png" },
+      { "pagePath": "pages/analysis/analysis", "text": "分析", "iconPath": "assets/tab-analysis.png", "selectedIconPath": "assets/tab-analysis-active.png" },
+      { "pagePath": "pages/history/history", "text": "历史", "iconPath": "assets/tab-history.png", "selectedIconPath": "assets/tab-history-active.png" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

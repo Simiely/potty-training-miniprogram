@@ -1,0 +1,138 @@
+.screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.lock-screen {
+  background: linear-gradient(180deg, #FFF3E0 0%, #FFD9B3 100%);
+}
+.statusbar {
+  width: 100%;
+}
+.lock-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 0 0;
+}
+.lock-icon {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(135deg, #FF8A65, #FFAB91);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60rpx;
+  box-shadow: 0 12rpx 32rpx rgba(255, 138, 101, 0.35);
+}
+.lock-appname {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #5D4037;
+  margin-top: 24rpx;
+}
+.lock-prompt {
+  font-size: 26rpx;
+  color: #8D6E63;
+  margin-top: 12rpx;
+}
+
+.auth-btn {
+  margin-top: 64rpx;
+  background: linear-gradient(135deg, #FF8A65, #FF7043);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 600;
+  border-radius: 999rpx;
+  padding: 0 60rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  box-shadow: 0 8rpx 28rpx rgba(255, 138, 101, 0.35);
+}
+.auth-btn::after {
+  border: none;
+}
+
+.lock-dots {
+  display: flex;
+  gap: 32rpx;
+  justify-content: center;
+  margin-top: 48rpx;
+}
+.lock-dot {
+  width: 26rpx;
+  height: 26rpx;
+  border-radius: 50%;
+  border: 4rpx solid #FF8A65;
+  background: transparent;
+  transition: all 0.15s;
+}
+.lock-dot.filled {
+  background: #FF8A65;
+}
+.lock-dot.error {
+  border-color: #E64A19;
+  background: #E64A19;
+}
+.lock-dots.shake {
+  animation: shake 0.42s;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-16rpx); }
+  40%, 80% { transform: translateX(16rpx); }
+}
+.lock-error {
+  color: #E64A19;
+  font-size: 24rpx;
+  margin-top: 24rpx;
+  min-height: 32rpx;
+}
+
+.keypad {
+  width: 100%;
+  padding: 24rpx 52rpx 44rpx;
+  box-sizing: border-box;
+  margin-top: 20rpx;
+}
+.keypad-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 28rpx;
+}
+.key {
+  width: 150rpx;
+  height: 150rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 52rpx;
+  font-weight: 600;
+  color: #4E342E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.key:active {
+  background: #fff;
+}
+.key.empty {
+  background: transparent;
+}
+.key.del {
+  background: transparent;
+  color: #8D6E63;
+  font-size: 48rpx;
+}
+
+.lock-foot {
+  padding: 8rpx 0 20rpx;
+}
+.lock-foot .lk {
+  font-size: 24rpx;
+  color: #8D6E63;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
