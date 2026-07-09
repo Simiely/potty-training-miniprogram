@@ -9,6 +9,7 @@ Page({
     error: '',          // 错误提示
     shaking: false,     // 抖动动画
     dots: [0, 1, 2, 3],
+    showBio: true,      // 是否展示指纹/面容按钮（鸿蒙上 SOTER 支持不确定，默认隐藏走密码）
   },
 
   onLoad() {
@@ -20,7 +21,11 @@ Page({
     }
     // 自定义导航下，把状态栏文字设为白色以适配暖色渐变
     wx.setNavigationBarColor({ frontColor: '#ffffff', backgroundColor: '#FF8A65' });
-    this.setData({ navHeight: app.globalData.navHeight });
+    // 鸿蒙（纯血 ohos）上 SOTER 生物认证可用性不确定，隐藏指纹/面容入口，统一走 4 位密码
+    this.setData({
+      navHeight: app.globalData.navHeight,
+      showBio: !app.globalData.isHarmony,
+    });
   },
 
   // 微信授权（真实项目用 res.code 换 openid）

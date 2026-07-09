@@ -49,7 +49,7 @@
         </view>
       </view>
 
-      <view class="lock-foot">
+      <view class="lock-foot" wx:if="{{showBio}}">
         <view class="lk" bindtap="onBio">🔒 使用指纹 / 面容</view>
       </view>
     </block>
