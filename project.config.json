@@ -1,6 +1,6 @@
 {
   "description": "宝宝如厕训练助手 - 微信小程序",
-  "packOptions": { "ignore": [], "include": [] },
+  "packOptions": { "ignore": [{ "type": "folder", "value": "scripts" }], "include": [] },
   "setting": {
     "urlCheck": false,
     "es6": true,
