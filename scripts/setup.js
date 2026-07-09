@@ -70,6 +70,8 @@ function backup(p) {
   console.log(`  project.config.json → appid = ${appid}`);
   console.log(`  config.js → ENV = ${envId}, USE_CLOUD = ${useCloud ? 'true' : 'false'}`);
   console.log('（原文件已备份为 .bak，可随时还原）\n');
-  console.log('下一步：在云开发控制台新建集合 potty_records 并设权限（见向导说明）。');
+  console.log('下一步（二选一）：');
+  console.log('  A. 自动：运行  node scripts/init-cloud.js  （自动建集合 potty_records + 设权限，需管理员密钥）');
+  console.log('  B. 手动：云开发控制台 → 数据库 → 新建集合 potty_records → 权限设「所有用户可读，仅创建者可写」');
   rl.close();
 })();
