@@ -14,7 +14,12 @@ Page({
     wx.setNavigationBarColor({ frontColor: '#ffffff', backgroundColor: '#FF8A65' });
   },
 
-  onShow() { this.load(); },
+  onShow() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: 1 });
+    }
+    this.load();
+  },
   onPullDownRefresh() { this.load(); wx.stopPullDownRefresh(); },
 
   load() {

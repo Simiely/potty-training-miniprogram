@@ -13,6 +13,7 @@
     "navigationBarTitleText": "宝宝如厕训练助手"
   },
   "tabBar": {
+    "custom": true,
     "color": "#9E9E9E",
     "selectedColor": "#FF8A65",
     "backgroundColor": "#FFFFFF",

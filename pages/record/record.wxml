@@ -15,7 +15,7 @@
       <view class="rec-btn grad-diaper" bindtap="onRecord" data-type="diaper">换尿不湿 👶</view>
     </view>
   </view>
-  <view wx:if="{{undoVisible}}" class="undo-chip" bindtap="onUndo">↩️ 撤销刚才的记录</view>
+  <view wx:if="{{undoVisible}}" class="undo-fab" bindtap="onUndo">↩️ 撤销刚才的记录</view>
 
   <!-- 今日统计 -->
   <view class="card">
