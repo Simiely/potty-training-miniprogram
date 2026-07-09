@@ -52,6 +52,7 @@
       <view class="lock-foot" wx:if="{{showBio}}">
         <view class="lk" bindtap="onBio">🔒 使用指纹 / 面容</view>
       </view>
+      <view class="lock-harmony-tip" wx:if="{{isHarmony}}">鸿蒙设备请使用 4 位密码解锁</view>
     </block>
   </view>
 </view>

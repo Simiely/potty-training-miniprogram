@@ -10,6 +10,7 @@ Page({
     shaking: false,     // 抖动动画
     dots: [0, 1, 2, 3],
     showBio: true,      // 是否展示指纹/面容按钮（鸿蒙上 SOTER 支持不确定，默认隐藏走密码）
+    isHarmony: false,   // 是否鸿蒙设备（用于展示平台相关提示）
   },
 
   onLoad() {
@@ -24,6 +25,7 @@ Page({
     // 鸿蒙（纯血 ohos）上 SOTER 生物认证可用性不确定，隐藏指纹/面容入口，统一走 4 位密码
     this.setData({
       navHeight: app.globalData.navHeight,
+      isHarmony: app.globalData.isHarmony,
       showBio: !app.globalData.isHarmony,
     });
   },

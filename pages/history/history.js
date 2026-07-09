@@ -17,7 +17,10 @@ Page({
   },
 
   onLoad() {
-    this.setData({ navHeight: getApp().globalData.navHeight });
+    this.setData({
+      navHeight: getApp().globalData.navHeight,
+      isHarmony: getApp().globalData.isHarmony,
+    });
     wx.setNavigationBarColor({ frontColor: '#ffffff', backgroundColor: '#FF8A65' });
   },
 

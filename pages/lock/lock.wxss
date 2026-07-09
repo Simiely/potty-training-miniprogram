@@ -136,3 +136,12 @@
   align-items: center;
   gap: 8rpx;
 }
+
+.lock-harmony-tip {
+  padding: 8rpx 24rpx;
+  margin-bottom: 12rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 138, 101, 0.12);
+  color: #E64A19;
+  font-size: 22rpx;
+}
