@@ -10,7 +10,7 @@ App({
     // 读取系统信息，供自定义导航栏计算高度
     let info;
     try {
-      // wx.getWindowInfo 自基础库 2.20.1 起支持，本工程最低 3.0.0，无需 getSystemInfo 兜底
+      // 用 wx.getWindowInfo 取状态栏高度（自基础库 2.20.1 起提供，替代已停止维护的系统信息聚合接口）
       info = wx.getWindowInfo();
     } catch (e) {
       info = { statusBarHeight: 20 };
