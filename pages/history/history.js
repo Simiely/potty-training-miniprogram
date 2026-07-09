@@ -1,5 +1,5 @@
 const { TYPE_META } = require('../../config');
-const { getGroupedRecords, deleteRecord, clearAllRecords } = require('../../utils/storage');
+const { getGroupedRecords, deleteRecord, clearAllRecords, dateKey } = require('../../utils/storage');
 
 const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
@@ -30,7 +30,7 @@ Page({
   onPullDownRefresh() { this.load(); wx.stopPullDownRefresh(); },
 
   load() {
-    const todayStr = new Date().toDateString();
+    const todayStr = dateKey(Date.now());
     const groups = getGroupedRecords().map((g) => {
       const d = new Date(g.date);
       const records = g.records.map((r) => ({

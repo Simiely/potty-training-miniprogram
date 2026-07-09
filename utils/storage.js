@@ -4,6 +4,16 @@
 // ============================================================
 const { STORAGE_KEYS } = require('../config');
 
+// 本地日期 key（yyyy-MM-dd）。iOS/Android 均可被 new Date() 安全解析；
+// 切勿用 toDateString()（如 "Thu Jul 09 2026"），iOS 无法解析会导致历史分组/排序出错。
+function dateKey(ts) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function getRecords() {
   return wx.getStorageSync(STORAGE_KEYS.RECORDS) || [];
 }
@@ -34,14 +44,14 @@ function clearAllRecords() {
 }
 
 function getTodayRecords() {
-  const today = new Date().toDateString();
-  return getRecords().filter((r) => new Date(r.timestamp).toDateString() === today);
+  const today = dateKey(Date.now());
+  return getRecords().filter((r) => dateKey(r.timestamp) === today);
 }
 
 function getGroupedRecords() {
   const map = {};
   getRecords().forEach((r) => {
-    const d = new Date(r.timestamp).toDateString();
+    const d = dateKey(r.timestamp);
     if (!map[d]) map[d] = [];
     map[d].push(r);
   });
@@ -59,7 +69,7 @@ function getGroupedRecords() {
         diaperCount: records.filter((r) => r.type === 'diaper').length,
       };
     })
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+    .sort((a, b) => b.date.localeCompare(a.date));
 }
 
 module.exports = {
@@ -69,4 +79,5 @@ module.exports = {
   clearAllRecords,
   getTodayRecords,
   getGroupedRecords,
+  dateKey,
 };

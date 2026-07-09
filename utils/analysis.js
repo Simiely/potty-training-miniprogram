@@ -2,7 +2,7 @@
 // 分析逻辑（小程序版）
 // 移植自 H5 项目的 src/utils/analysis.js（预测/趋势/时段/日均）
 // ============================================================
-const { getRecords } = require('./storage');
+const { getRecords, dateKey } = require('./storage');
 
 function getRecentPoopRecords(n = 7) {
   return getRecords()
@@ -114,12 +114,12 @@ function getDailyAverage() {
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    days.push({ label: `${d.getMonth() + 1}/${d.getDate()}`, dateStr: d.toDateString() });
+    days.push({ label: `${d.getMonth() + 1}/${d.getDate()}`, dateStr: dateKey(d.getTime()) });
   }
   const countByType = (type) =>
     days.map((day) =>
       records.filter(
-        (r) => r.type === type && new Date(r.timestamp).toDateString() === day.dateStr
+        (r) => r.type === type && dateKey(r.timestamp) === day.dateStr
       ).length
     );
   return {
