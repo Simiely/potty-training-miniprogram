@@ -8,9 +8,26 @@ const LOCK_PASSWORD = '2411';
 
 // 本地存储 key
 const STORAGE_KEYS = {
-  RECORDS: 'potty_records',   // 如厕记录数组
+  RECORDS: 'potty_records',   // 如厕记录数组（本地模式）
   OPENID: 'wx_openid',        // 微信登录 code / openid
   VERIFIED: 'app_verified',   // 是否已授权并通过密码校验（之后免输）
+  PROFILES: 'potty_profiles', // 本机照顾者档案列表 [{id, nickname, avatarUrl}]
+  CURRENT_USER: 'potty_current_user', // 当前记录人 id
+};
+
+// ============================================================
+// 云开发开关（方案 B：跨设备共享记录）
+// 配置步骤：
+//   1) 微信公众平台注册真实小程序，拿到 AppID，替换 project.config.json 的 appid
+//   2) 开发者工具顶部「云开发」开通，新建【免费体验版】环境，复制环境 ID 填到下方 ENV
+//   3) 云开发控制台新建集合 potty_records，权限设为「所有用户可读，仅创建者可写」
+//   4) 把 USE_CLOUD 改为 true
+// 未配置前 USE_CLOUD=false，工程仍按本地存储运行（touristappid 也能跑）。
+// ============================================================
+const USE_CLOUD = false;
+const CLOUD = {
+  ENV: '',                       // 云开发环境 ID（如 cloud1-xxxxxx）
+  COLLECTION_RECORDS: 'potty_records',
 };
 
 // 记录类型的中文标签与语义色（与画板一致）
@@ -21,4 +38,4 @@ const TYPE_META = {
   diaper: { label: '换尿不湿', emoji: '👶', color: '#BA68C8', soft: '#F3E5F5', text: '#7B1FA2' },
 };
 
-module.exports = { LOCK_PASSWORD, STORAGE_KEYS, TYPE_META };
+module.exports = { LOCK_PASSWORD, STORAGE_KEYS, TYPE_META, USE_CLOUD, CLOUD };

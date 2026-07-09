@@ -1,5 +1,6 @@
 const { TYPE_META } = require('../../config');
-const { getGroupedRecords, deleteRecord, clearAllRecords, dateKey } = require('../../utils/storage');
+const store = require('../../utils/store');
+const { dateKey } = require('../../utils/storage');
 
 const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
@@ -30,11 +31,12 @@ Page({
     }
     this.load();
   },
-  onPullDownRefresh() { this.load(); wx.stopPullDownRefresh(); },
+  onPullDownRefresh() { this.load().then(() => wx.stopPullDownRefresh()); },
 
-  load() {
+  async load() {
     const todayStr = dateKey(Date.now());
-    const groups = getGroupedRecords().map((g) => {
+    const grouped = await store.getGroupedRecords();
+    const groups = grouped.map((g) => {
       const d = new Date(g.date);
       const records = g.records.map((r) => ({
         id: r.id,
@@ -43,6 +45,7 @@ Page({
         label: TYPE_META[r.type].label,
         color: TYPE_META[r.type].color,
         time: fmtTime(r.timestamp),
+        recorder: r.recorder || null,
       }));
       return {
         date: g.date,
@@ -65,14 +68,14 @@ Page({
     this.setData({ expanded });
   },
 
-  onDelete(e) {
+  async onDelete(e) {
     const id = e.currentTarget.dataset.id;
     wx.showModal({
       title: '确认删除',
       content: '确定要删除这条记录吗？此操作无法撤销。',
-      success: (r) => {
+      success: async (r) => {
         if (r.confirm) {
-          deleteRecord(id);
+          await store.deleteRecord(id);
           this.load();
           wx.showToast({ title: '已删除', icon: 'none' });
         }
@@ -80,13 +83,13 @@ Page({
     });
   },
 
-  onClearAll() {
+  async onClearAll() {
     wx.showModal({
       title: '⚠️ 清空全部数据',
       content: '确定要删除所有记录吗？此操作无法撤销，所有数据将被永久清除。',
-      success: (r) => {
+      success: async (r) => {
         if (r.confirm) {
-          clearAllRecords();
+          await store.clearAllRecords();
           this.load();
           wx.showToast({ title: '已清空', icon: 'none' });
         }

@@ -1,11 +1,13 @@
 // ============================================================
 // 分析逻辑（小程序版）
 // 移植自 H5 项目的 src/utils/analysis.js（预测/趋势/时段/日均）
+// 改造：所有函数接收 records 数组作为参数，不再直接依赖存储后端，
+// 由页面通过 store 异步取数后传入，从而本地/云端模式统一。
 // ============================================================
-const { getRecords, dateKey } = require('./storage');
+const { dateKey } = require('./storage');
 
-function getRecentPoopRecords(n = 7) {
-  return getRecords()
+function getRecentPoopRecords(records, n = 7) {
+  return records
     .filter((r) => r.type === 'poop')
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
     .slice(0, n)
@@ -29,43 +31,43 @@ function calcIntervalStats(records) {
   };
 }
 
-function predictNextPoop() {
-  const records = getRecentPoopRecords(7);
-  if (records.length < 2) {
+function predictNextPoop(records) {
+  const recs = getRecentPoopRecords(records, 7);
+  if (recs.length < 2) {
     return {
       predictedStart: null,
       predictedEnd: null,
       avgHours: 0,
       stdDevHours: 0,
       confidence: 'low',
-      sampleSize: records.length,
+      sampleSize: recs.length,
     };
   }
-  const { avgHours, stdDevHours } = calcIntervalStats(records);
-  const lastTime = new Date(records[records.length - 1].timestamp);
+  const { avgHours, stdDevHours } = calcIntervalStats(recs);
+  const lastTime = new Date(recs[recs.length - 1].timestamp);
   const predictedStart = new Date(lastTime.getTime() + (avgHours - stdDevHours) * 3600000);
   const predictedEnd = new Date(lastTime.getTime() + (avgHours + stdDevHours) * 3600000);
 
   let confidence = 'low';
-  if (records.length >= 5) {
+  if (recs.length >= 5) {
     const cv = avgHours > 0 ? stdDevHours / avgHours : 0;
     if (cv < 0.2) confidence = 'high';
     else if (cv < 0.4) confidence = 'medium';
-  } else if (records.length >= 3) {
+  } else if (recs.length >= 3) {
     confidence = 'medium';
   }
-  return { predictedStart, predictedEnd, avgHours, stdDevHours, confidence, sampleSize: records.length };
+  return { predictedStart, predictedEnd, avgHours, stdDevHours, confidence, sampleSize: recs.length };
 }
 
-function analyzeTrend() {
-  const records = getRecentPoopRecords(7);
-  if (records.length < 3) {
+function analyzeTrend(records) {
+  const recs = getRecentPoopRecords(records, 7);
+  if (recs.length < 3) {
     return { trend: 'stable', trendDesc: '数据不足，继续记录中…', intervals: [] };
   }
   const intervals = [];
-  for (let i = 1; i < records.length; i++) {
-    const prev = new Date(records[i - 1].timestamp);
-    const curr = new Date(records[i].timestamp);
+  for (let i = 1; i < recs.length; i++) {
+    const prev = new Date(recs[i - 1].timestamp);
+    const curr = new Date(recs[i].timestamp);
     intervals.push(Math.round(((curr - prev) / (1000 * 60 * 60)) * 10) / 10);
   }
   if (intervals.length < 2) return { trend: 'stable', trendDesc: '间隔稳定', intervals };
@@ -90,10 +92,10 @@ function analyzeTrend() {
   return { trend, trendDesc, intervals };
 }
 
-function analyzeCommonTimes() {
-  const records = getRecords().filter((r) => r.type === 'poop');
+function analyzeCommonTimes(records) {
+  const poop = records.filter((r) => r.type === 'poop');
   const hourBuckets = new Array(24).fill(0);
-  records.forEach((r) => {
+  poop.forEach((r) => {
     hourBuckets[new Date(r.timestamp).getHours()]++;
   });
   const timeLabels = [
@@ -108,8 +110,7 @@ function analyzeCommonTimes() {
     .sort((a, b) => b.count - a.count);
 }
 
-function getDailyAverage() {
-  const records = getRecords();
+function getDailyAverage(records) {
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();

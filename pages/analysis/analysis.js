@@ -1,4 +1,5 @@
 const { analyzeTrend, analyzeCommonTimes, getDailyAverage } = require('../../utils/analysis');
+const store = require('../../utils/store');
 
 Page({
   data: {
@@ -23,21 +24,23 @@ Page({
     }
     this.load();
   },
-  onPullDownRefresh() { this.load(); wx.stopPullDownRefresh(); },
+  onPullDownRefresh() { this.load().then(() => wx.stopPullDownRefresh()); },
 
-  load() {
-    const trend = analyzeTrend();
+  async load() {
+    const records = await store.getRecords();
+
+    const trend = analyzeTrend(records);
     const maxInterval = trend.intervals.length ? Math.max(...trend.intervals, 1) : 1;
     const intervals = trend.intervals.map((h) => ({
       h,
       pct: Math.max(Math.round((h / maxInterval) * 100), 8),
     }));
 
-    const commonTimes = analyzeCommonTimes()
+    const commonTimes = analyzeCommonTimes(records)
       .slice(0, 5)
       .map((c) => ({ label: `${c.label} (${c.count}次)`, hot: c.count >= 3 }));
 
-    const daily = getDailyAverage();
+    const daily = getDailyAverage(records);
     const maxVal = Math.max(1, ...daily.peeData, ...daily.poopData, ...daily.underwearData, ...daily.diaperData);
     const bars = daily.labels.map((_, i) => ({
       pee: (daily.peeData[i] / maxVal) * 100,

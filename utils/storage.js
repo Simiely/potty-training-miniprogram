@@ -22,12 +22,13 @@ function saveRecords(list) {
   wx.setStorageSync(STORAGE_KEYS.RECORDS, list);
 }
 
-function addRecord(type) {
+function addRecord(type, recorder) {
   const list = getRecords();
   const record = {
     id: `${Date.now()}_${Math.floor(Math.random() * 1000)}`,
     type,
     timestamp: new Date().toISOString(),
+    recorder: recorder || null, // 记录人快照 {nickname, avatarUrl}，跨设备展示用
   };
   list.push(record);
   saveRecords(list);

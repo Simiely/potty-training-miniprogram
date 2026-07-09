@@ -37,6 +37,10 @@
               <view class="hd-dot" style="background:{{rec.color}}"></view>
               <text class="hd-name">{{rec.emoji}} {{rec.label}}</text>
               <text class="hd-time">{{rec.time}}</text>
+              <view wx:if="{{rec.recorder}}" class="hd-recorder">
+                <image wx:if="{{rec.recorder.avatarUrl}}" class="hd-avatar" src="{{rec.recorder.avatarUrl}}" mode="aspectFill" />
+                <text class="hd-rname">{{rec.recorder.nickname}}</text>
+              </view>
             </view>
             <view class="hd-del" catchtap="onDelete" data-id="{{rec.id}}">🗑</view>
           </view>

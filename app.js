@@ -1,4 +1,4 @@
-const { STORAGE_KEYS } = require('./config');
+const { STORAGE_KEYS, USE_CLOUD, CLOUD } = require('./config');
 
 App({
   globalData: {
@@ -32,6 +32,12 @@ App({
         dev.platform === 'ohos' || dev.system === 'HarmonyOS';
     } catch (e) {
       this.globalData.isHarmony = false;
+    }
+
+    // 云开发初始化（方案 B）：仅当 config.USE_CLOUD=true 且已配置环境 ID 时启用。
+    // 守卫式判断，避免在 touristappid / 未配置环境下调用 wx.cloud 报错。
+    if (USE_CLOUD && CLOUD.ENV && wx.cloud) {
+      wx.cloud.init({ env: CLOUD.ENV, traceUser: true });
     }
 
     // 启动即检查是否已通过校验（授权 + 密码）。已校验则直接进入记录页，

@@ -4,6 +4,17 @@
     <view class="appbar-title">🚽 宝宝如厕训练助手</view>
   </view>
 
+  <!-- 当前记录人 -->
+  <view class="recorder-bar" bindtap="openManager">
+    <image wx:if="{{recorder.avatarUrl}}" class="rec-avatar" src="{{recorder.avatarUrl}}" mode="aspectFill" />
+    <view wx:else class="rec-avatar rec-avatar-empty">👤</view>
+    <view class="rec-text">
+      <text class="rec-label">当前记录人</text>
+      <text class="rec-name">{{recorder.nickname || '未设置'}}</text>
+    </view>
+    <text class="rec-caret">切换 ▾</text>
+  </view>
+
   <!-- 快速记录 -->
   <view class="record-grid">
     <view class="record-row">
@@ -44,6 +55,10 @@
           <view class="tl-line">
             <text class="name">{{item.emoji}} {{item.label}}</text>
             <text class="time">{{item.time}}</text>
+            <view wx:if="{{item.recorder}}" class="tl-recorder">
+              <image wx:if="{{item.recorder.avatarUrl}}" class="tl-avatar" src="{{item.recorder.avatarUrl}}" mode="aspectFill" />
+              <text class="tl-rname">{{item.recorder.nickname}}</text>
+            </view>
           </view>
         </view>
       </view>
@@ -83,4 +98,38 @@
   </view>
 
   <view style="height:40rpx;"></view>
+
+  <!-- 选择记录人面板 -->
+  <view wx:if="{{showManager}}" class="sheet-mask" bindtap="closeManager">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">选择记录人</view>
+      <view wx:if="{{profiles.length === 0}}" class="sheet-empty">还没有照顾者，点击下方添加</view>
+      <view wx:for="{{profiles}}" wx:key="id" class="profile-item" bindtap="selectRecorder" data-id="{{item.id}}">
+        <image wx:if="{{item.avatarUrl}}" class="pi-avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
+        <view wx:else class="pi-avatar pi-empty">👤</view>
+        <text class="pi-name">{{item.nickname}}</text>
+        <text wx:if="{{item.id === currentUserId}}" class="pi-check">✓ 当前</text>
+        <text class="pi-del" catchtap="removeProfile" data-id="{{item.id}}">🗑</text>
+      </view>
+      <view class="profile-item add" bindtap="openEditor">＋ 添加照顾者</view>
+      <view class="sheet-cancel" bindtap="closeManager">取消</view>
+    </view>
+  </view>
+
+  <!-- 新增/编辑照顾者 -->
+  <view wx:if="{{showEditor}}" class="sheet-mask" bindtap="closeEditor">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">{{editId ? '编辑照顾者' : '添加照顾者'}}</view>
+      <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+        <image wx:if="{{editAvatar}}" class="edit-avatar" src="{{editAvatar}}" mode="aspectFill" />
+        <view wx:else class="edit-avatar edit-avatar-empty">👤</view>
+        <text class="avatar-tip">点击选择头像</text>
+      </button>
+      <input class="nick-input" type="nickname" placeholder="点击获取微信昵称或输入" placeholder-class="nick-ph" value="{{editNickname}}" bindinput="onNickInput" bindblur="onNickInput" />
+      <view class="editor-actions">
+        <view class="ebtn ebtn-cancel" bindtap="closeEditor">取消</view>
+        <view class="ebtn ebtn-save" bindtap="saveProfile">保存</view>
+      </view>
+    </view>
+  </view>
 </view>

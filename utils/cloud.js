@@ -1,0 +1,104 @@
+// ============================================================
+// 云开发数据层（方案 B：跨设备共享记录）
+// 集合 potty_records 文档结构：
+//   { _id, _openid, type, timestamp(ISO), recorder:{nickname, avatarUrl} }
+// avatarUrl 为云存储 fileID（cloud://...）时可在任意设备显示。
+// 全部方法返回 Promise；调用前请确保 USE_CLOUD=true 且已 wx.cloud.init。
+// ============================================================
+const { CLOUD } = require('../config');
+
+function db() {
+  return wx.cloud.database({ env: CLOUD.ENV });
+}
+function coll() {
+  return db().collection(CLOUD.COLLECTION_RECORDS);
+}
+
+// 本地日期 key（与 storage.js 保持一致）
+function dateKey(ts) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// 把云端文档归一化为页面通用结构（用 id 统一代替 _id）
+function normalize(list) {
+  return list.map((r) => ({
+    id: r._id,
+    type: r.type,
+    timestamp: r.timestamp,
+    recorder: r.recorder || null,
+  }));
+}
+
+// 家庭量级数据量小，一次拉取全部（上限 1000）后在本地过滤/分组，
+// 避免多次请求。数据量大时可按需加分页。
+async function getRecords() {
+  const res = await coll().orderBy('timestamp', 'desc').limit(1000).get();
+  return normalize(res.data || []);
+}
+
+async function addRecord(type, recorder) {
+  const data = {
+    type,
+    timestamp: new Date().toISOString(),
+    recorder: recorder || null,
+  };
+  const res = await coll().add({ data });
+  return { id: res._id, ...data };
+}
+
+async function deleteRecord(id) {
+  await coll().doc(id).remove();
+}
+
+// 云数据库无「按条件批量删」客户端 API，逐条删（受集合权限约束，仅能删自己创建的）。
+async function clearAllRecords() {
+  const list = await getRecords();
+  await Promise.all(
+    list.map((r) => coll().doc(r.id).remove().catch(() => {}))
+  );
+}
+
+async function getTodayRecords() {
+  const all = await getRecords();
+  const today = dateKey(Date.now());
+  return all.filter((r) => dateKey(r.timestamp) === today);
+}
+
+async function getGroupedRecords() {
+  const all = await getRecords();
+  const map = {};
+  all.forEach((r) => {
+    const d = dateKey(r.timestamp);
+    if (!map[d]) map[d] = [];
+    map[d].push(r);
+  });
+  return Object.keys(map)
+    .map((date) => {
+      const records = map[date].sort(
+        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+      );
+      return {
+        date,
+        records,
+        poopCount: records.filter((r) => r.type === 'poop').length,
+        peeCount: records.filter((r) => r.type === 'pee').length,
+        underwearCount: records.filter((r) => r.type === 'underwear').length,
+        diaperCount: records.filter((r) => r.type === 'diaper').length,
+      };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+module.exports = {
+  getRecords,
+  addRecord,
+  deleteRecord,
+  clearAllRecords,
+  getTodayRecords,
+  getGroupedRecords,
+  dateKey,
+};

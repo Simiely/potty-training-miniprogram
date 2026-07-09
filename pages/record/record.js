@@ -1,5 +1,6 @@
 const { TYPE_META } = require('../../config');
-const { getTodayRecords, addRecord, deleteRecord } = require('../../utils/storage');
+const store = require('../../utils/store');
+const profile = require('../../utils/profile');
 const { predictNextPoop } = require('../../utils/analysis');
 
 const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
@@ -27,6 +28,15 @@ Page({
     todayLabel: '',
     undoVisible: false,
     prediction: { hasEnough: false, sampleSize: 0 },
+    // —— 记录人 ——
+    recorder: null,        // 当前记录人快照 {nickname, avatarUrl}
+    profiles: [],          // 本机照顾者列表
+    currentUserId: '',
+    showManager: false,    // 选择记录人面板
+    showEditor: false,     // 新增/编辑照顾者表单
+    editId: '',            // 编辑中的 id（空=新增）
+    editNickname: '',
+    editAvatar: '',        // chooseAvatar 返回的临时路径
   },
 
   onLoad() {
@@ -41,12 +51,22 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0 });
     }
+    this.refreshRecorder();
     this.loadData();
   },
-  onPullDownRefresh() { this.loadData(); wx.stopPullDownRefresh(); },
+  onPullDownRefresh() { this.loadData().then(() => wx.stopPullDownRefresh()); },
 
-  loadData() {
-    const today = getTodayRecords();
+  // 同步当前记录人 + 列表（切换 tab 回来或编辑后调用）
+  refreshRecorder() {
+    this.setData({
+      recorder: profile.getCurrentRecorder(),
+      profiles: profile.getProfiles(),
+      currentUserId: profile.getCurrentUserId(),
+    });
+  },
+
+  async loadData() {
+    const today = await store.getTodayRecords();
     const counts = { pee: 0, poop: 0, underwear: 0, diaper: 0 };
     today.forEach((r) => counts[r.type]++);
     const timeline = today
@@ -59,12 +79,14 @@ Page({
         label: TYPE_META[r.type].label,
         color: TYPE_META[r.type].color,
         time: fmtTime(r.timestamp),
+        recorder: r.recorder || null,
       }));
 
     const d = new Date();
     const todayLabel = `${d.getMonth() + 1}月${d.getDate()}日 ${WEEKDAYS[d.getDay()]}`;
 
-    const pred = predictNextPoop();
+    const all = await store.getRecords();
+    const pred = predictNextPoop(all);
     const conf = confidenceConfig[pred.confidence] || confidenceConfig.low;
     const now = new Date();
     let windowState = 'default';
@@ -92,9 +114,15 @@ Page({
     });
   },
 
-  onRecord(e) {
+  async onRecord(e) {
     const type = e.currentTarget.dataset.type;
-    const rec = addRecord(type);
+    // 若尚未设置记录人，先弹选择面板
+    if (!profile.getCurrentRecorder()) {
+      this.setData({ showManager: true });
+      wx.showToast({ title: '请先选择记录人', icon: 'none' });
+      return;
+    }
+    const rec = await store.addRecord(type, profile.getCurrentRecorder());
     this.lastRecordId = rec.id;
     this.setData({ undoVisible: true });
     const meta = TYPE_META[type];
@@ -104,12 +132,73 @@ Page({
     this._undoTimer = setTimeout(() => this.setData({ undoVisible: false }), 5000);
   },
 
-  onUndo() {
+  async onUndo() {
     if (!this.lastRecordId) return;
-    deleteRecord(this.lastRecordId);
+    await store.deleteRecord(this.lastRecordId);
     this.lastRecordId = null;
     this.setData({ undoVisible: false });
     wx.showToast({ title: '已撤销上一条记录 ↩️', icon: 'none' });
     this.loadData();
+  },
+
+  // —— 记录人面板 ——
+  noop() {}, // 阻止点击面板内容时冒泡关闭
+  openManager() {
+    this.refreshRecorder();
+    this.setData({ showManager: true });
+  },
+  closeManager() { this.setData({ showManager: false }); },
+  selectRecorder(e) {
+    const id = e.currentTarget.dataset.id;
+    profile.setCurrentUserId(id);
+    this.refreshRecorder();
+    this.setData({ showManager: false });
+    wx.showToast({ title: '已切换记录人', icon: 'none' });
+  },
+  removeProfile(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.showModal({
+      title: '删除照顾者',
+      content: '确定删除该记录人吗？已记录的数据不会删除。',
+      success: (r) => {
+        if (r.confirm) {
+          profile.deleteProfile(id);
+          this.refreshRecorder();
+        }
+      },
+    });
+  },
+
+  // —— 新增/编辑照顾者 ——
+  openEditor() {
+    this.setData({
+      showManager: false,
+      showEditor: true,
+      editId: '',
+      editNickname: '',
+      editAvatar: '',
+    });
+  },
+  closeEditor() { this.setData({ showEditor: false }); },
+  onChooseAvatar(e) {
+    this.setData({ editAvatar: e.detail.avatarUrl });
+  },
+  onNickInput(e) {
+    this.setData({ editNickname: e.detail.value });
+  },
+  async saveProfile() {
+    const nickname = (this.data.editNickname || '').trim();
+    if (!nickname) {
+      wx.showToast({ title: '请填写昵称', icon: 'none' });
+      return;
+    }
+    await profile.saveProfile({
+      nickname,
+      avatarTempPath: this.data.editAvatar,
+      editId: this.data.editId,
+    });
+    this.setData({ showEditor: false });
+    this.refreshRecorder();
+    wx.showToast({ title: '已保存', icon: 'none' });
   },
 });
