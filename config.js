@@ -4,7 +4,7 @@
 
 // 锁屏固定密码（4 位数字）。请修改为你的实际密码。
 // 仅首次打开小程序时需要输入；输入正确后设备被信任，之后不再弹锁屏。
-const LOCK_PASSWORD = '1234';
+const LOCK_PASSWORD = '2411';
 
 // 本地存储 key
 const STORAGE_KEYS = {
