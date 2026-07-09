@@ -24,9 +24,9 @@ const STORAGE_KEYS = {
 //   4) 把 USE_CLOUD 改为 true
 // 未配置前 USE_CLOUD=false，工程仍按本地存储运行（touristappid 也能跑）。
 // ============================================================
-const USE_CLOUD = false;
+const USE_CLOUD = false;        // ⚠️ 待填：配置好云环境后改成 true（第 4 步）
 const CLOUD = {
-  ENV: '',                       // 云开发环境 ID（如 cloud1-xxxxxx）
+  ENV: '',                       // ⚠️ 待填：粘贴你的云开发环境 ID，如 cloud1-xxxxxx（第 2 步）
   COLLECTION_RECORDS: 'potty_records',
 };
 
