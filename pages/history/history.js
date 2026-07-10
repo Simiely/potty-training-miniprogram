@@ -83,10 +83,30 @@ Page({
     });
   },
 
-  async onClearAll() {
+  onClearAll() {
+    this._clearStep1();
+  },
+
+  _clearStep1() {
     wx.showModal({
-      title: '⚠️ 清空全部数据',
-      content: '确定要删除所有记录吗？此操作无法撤销，所有数据将被永久清除。',
+      title: '⚠️ 清空全部数据 (1/3)',
+      content: '确定要删除所有记录吗？此操作无法撤销。',
+      success: (r) => { if (r.confirm) this._clearStep2(); },
+    });
+  },
+
+  _clearStep2() {
+    wx.showModal({
+      title: '⚠️⚠️ 再次确认 (2/3)',
+      content: '所有历史数据将被永久清除，确认继续吗？',
+      success: (r) => { if (r.confirm) this._clearStep3(); },
+    });
+  },
+
+  async _clearStep3() {
+    wx.showModal({
+      title: '⚠️⚠️⚠️ 最后一次确认 (3/3)',
+      content: '此操作不可恢复！确认删除全部记录？',
       success: async (r) => {
         if (r.confirm) {
           await store.clearAllRecords();
