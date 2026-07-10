@@ -29,12 +29,33 @@ function getCurrentProfile() {
   return getProfiles().find((p) => p.id === id) || null;
 }
 
+// 保障云初始化已执行：app.js onLaunch 可能因 wx.cloud 尚未注入而跳过，
+// 本函数在首次真正需要云能力时补刀。调用方无需关心。
+function ensureCloudInit() {
+  if (!CLOUD.ENV) return false;
+  const app = getApp();
+  // 如果 app.js 已经尝试过 init，说明环境就绪；否则再试一次
+  if (app && app.globalData && app.globalData.cloudInitAttempted) return true;
+  if (typeof wx === 'undefined' || !wx.cloud) return false;
+  try {
+    wx.cloud.init({ env: CLOUD.ENV, traceUser: true });
+    if (app && app.globalData) {
+      app.globalData.cloudInitAttempted = true;
+      app.globalData.cloudEnv = CLOUD.ENV;
+    }
+    return true;
+  } catch (e) {
+    console.warn('[cloud] init retry failed in profile.js:', e);
+    return false;
+  }
+}
+
 // 上传头像：云模式上传到云存储返回 fileID（跨设备可见）；
 // 本地模式把 chooseAvatar 的临时文件持久化到本地用户目录，避免重启后失效。
 function uploadAvatar(tempPath) {
   return new Promise((resolve) => {
     if (!tempPath) return resolve('');
-    const useCloud = typeof wx !== 'undefined' && wx.cloud && CLOUD.ENV;
+    const useCloud = ensureCloudInit() && CLOUD.ENV;
     if (useCloud) {
       const ext = (tempPath.match(/\.(\w+)(?:\?.*)?$/) || [, 'png'])[1];
       const cloudPath = `avatars/${genId()}.${ext}`;

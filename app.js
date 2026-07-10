@@ -35,10 +35,18 @@ App({
     }
 
     // 云开发初始化（方案 B）：仅当 config.USE_CLOUD=true 且已配置环境 ID 时启用。
-    // 守卫式判断，避免在 touristappid / 未配置环境下调用 wx.cloud 报错。
-    if (USE_CLOUD && CLOUD.ENV && wx.cloud) {
-      wx.cloud.init({ env: CLOUD.ENV, traceUser: true });
+    // 去掉 wx.cloud 的前置判断，因为某些场景下 onLaunch 时 wx.cloud 尚未注入，
+    // 但后续 page onShow 时 wx.cloud 可能已可用。用 try-catch 兜底，失败时降级本地存储。
+    if (USE_CLOUD && CLOUD.ENV) {
+      try {
+        wx.cloud.init({ env: CLOUD.ENV, traceUser: true });
+      } catch (e) {
+        console.warn('[cloud] init failed at onLaunch, will retry on first use:', e);
+      }
     }
+    // 标记云初始化意图，供 profile.js 等模块在初次调用前补刀
+    this.globalData.cloudInitAttempted = USE_CLOUD && !!CLOUD.ENV;
+    this.globalData.cloudEnv = CLOUD.ENV;
 
     // 启动即检查是否已通过校验（授权 + 密码）。已校验则直接进入记录页，
     // 否则由 lock 页作为首页处理授权与密码。
