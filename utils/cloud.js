@@ -40,11 +40,15 @@ async function resolveAvatarUrls(list) {
     res.fileList.forEach((f, i) => {
       if (f.tempFileURL) {
         list[positions[i]].recorder.avatarUrl = f.tempFileURL;
+      } else {
+        // 转换失败清空，避免 raw cloud:// 路径导致 500
+        list[positions[i]].recorder.avatarUrl = '';
       }
-      // 转换失败保留原始 cloud://，上传者自己设备仍可直显
     });
   } catch (e) {
     console.warn('[cloud] getTempFileURL failed:', e);
+    // 转换失败清空，避免 raw cloud:// 路径导致 500
+    positions.forEach((i) => { list[i].recorder.avatarUrl = ''; });
   }
 }
 
@@ -108,15 +112,14 @@ async function getTodayRecords() {
 }
 
 // 单个 cloud://fileID 转临时链接，供外部模块调用。
-// 失败时返回原始 fileID——上传者自己的设备上 cloud:// 可直显。
-// 显示层通过 binderror 兜底，加载失败自动切为 👤 占位。
+// 失败时返回空字符串，避免 raw cloud:// 导致 500 错误。
 async function toTempUrl(fileID) {
   if (!fileID || !fileID.startsWith('cloud://')) return fileID;
   try {
     const res = await wx.cloud.getTempFileURL({ fileList: [fileID] });
-    return res.fileList[0] && res.fileList[0].tempFileURL ? res.fileList[0].tempFileURL : fileID;
+    return res.fileList[0] && res.fileList[0].tempFileURL ? res.fileList[0].tempFileURL : '';
   } catch (e) {
-    return fileID;
+    return '';
   }
 }
 
