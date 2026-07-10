@@ -1,6 +1,7 @@
 const { TYPE_META } = require('../../config');
 const store = require('../../utils/store');
 const profile = require('../../utils/profile');
+const { toTempUrl } = require('../../utils/cloud');
 const { predictNextPoop } = require('../../utils/analysis');
 
 const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
@@ -57,10 +58,17 @@ Page({
   onPullDownRefresh() { this.loadData().then(() => wx.stopPullDownRefresh()); },
 
   // 同步当前记录人 + 列表（切换 tab 回来或编辑后调用）
-  refreshRecorder() {
+  async refreshRecorder() {
+    const rec = profile.getCurrentRecorder();
+    const list = profile.getProfiles();
+    // 把 cloud://fileID 转临时链接，跨用户也能显示头像
+    if (rec && rec.avatarUrl) rec.avatarUrl = await toTempUrl(rec.avatarUrl);
+    for (const p of list) {
+      if (p.avatarUrl) p.avatarUrl = await toTempUrl(p.avatarUrl);
+    }
     this.setData({
-      recorder: profile.getCurrentRecorder(),
-      profiles: profile.getProfiles(),
+      recorder: rec,
+      profiles: list,
       currentUserId: profile.getCurrentUserId(),
     });
   },

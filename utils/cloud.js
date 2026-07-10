@@ -94,6 +94,17 @@ async function getTodayRecords() {
   return all.filter((r) => dateKey(r.timestamp) === today);
 }
 
+// 单个 cloud://fileID 转临时链接，供 profile.js 等模块调用
+async function toTempUrl(fileID) {
+  if (!fileID || !fileID.startsWith('cloud://')) return fileID;
+  try {
+    const res = await wx.cloud.getTempFileURL({ fileList: [fileID] });
+    return res.fileList[0] && res.fileList[0].tempFileURL ? res.fileList[0].tempFileURL : fileID;
+  } catch (e) {
+    return fileID;
+  }
+}
+
 async function getGroupedRecords() {
   const all = await getRecords();
   const map = {};
@@ -126,5 +137,6 @@ module.exports = {
   clearAllRecords,
   getTodayRecords,
   getGroupedRecords,
+  toTempUrl,
   dateKey,
 };
