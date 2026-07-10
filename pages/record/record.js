@@ -46,12 +46,20 @@ Page({
       isHarmony: getApp().globalData.isHarmony,
     });
     wx.setNavigationBarColor({ frontColor: '#ffffff', backgroundColor: '#FF8A65' });
+    this._firstShow = true;
+  },
+
+  onReady() {
+    this.refreshRecorder();
+    this.loadData();
   },
 
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0 });
     }
+    // 非首次展示时刷新数据；首次由 onReady 处理，避免 setData 时序警告
+    if (this._firstShow) { this._firstShow = false; return; }
     this.refreshRecorder();
     this.loadData();
   },
