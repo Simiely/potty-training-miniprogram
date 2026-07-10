@@ -16,16 +16,12 @@ Page({
       isHarmony: getApp().globalData.isHarmony,
     });
     wx.setNavigationBarColor({ frontColor: '#ffffff', backgroundColor: '#FF8A65' });
-    this._firstShow = true;
   },
-
-  onReady() { this.load(); },
 
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 1 });
     }
-    if (this._firstShow) { this._firstShow = false; return; }
     this.load();
   },
   onPullDownRefresh() { this.load().then(() => wx.stopPullDownRefresh()); },
