@@ -1,7 +1,7 @@
 const { TYPE_META } = require('../../config');
 const store = require('../../utils/store');
 const { dateKey } = require('../../utils/storage');
-const { getMyOpenid } = require('../../utils/cloud');
+const { getDeviceId } = require('../../utils/device');
 
 const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
@@ -35,8 +35,6 @@ Page({
   onPullDownRefresh() { this.load().then(() => wx.stopPullDownRefresh()); },
 
   async load() {
-    // openid 从本地存储读取，首次创建记录时由 addRecord 触发云函数获取并持久化
-    const myOpenid = getMyOpenid();
     const todayStr = dateKey(Date.now());
     const grouped = await store.getGroupedRecords();
     const groups = grouped.map((g) => {
@@ -49,7 +47,7 @@ Page({
         color: TYPE_META[r.type].color,
         time: fmtTime(r.timestamp),
         recorder: r.recorder || null,
-        canDelete: myOpenid ? myOpenid === r.openid : false,
+        canDelete: getDeviceId() === r.deviceId,
       }));
       return {
         date: g.date,

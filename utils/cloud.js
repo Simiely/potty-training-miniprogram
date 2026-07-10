@@ -1,11 +1,12 @@
 // ============================================================
 // 云开发数据层（方案 B：跨设备共享记录）
 // 集合 potty_records 文档结构：
-//   { _id, _openid, type, timestamp(ISO), recorder:{nickname, avatarUrl} }
-// avatarUrl 为云存储 fileID（cloud://...）时可在任意设备显示。
+//   { _id, _openid, type, timestamp(ISO), deviceId, recorder:{nickname, avatarUrl} }
+// deviceId 为本地生成的设备标识，用于区分本设备和他人创建的记录。
 // 全部方法返回 Promise；调用前请确保 USE_CLOUD=true 且已 wx.cloud.init。
 // ============================================================
 const { CLOUD } = require('../config');
+const { getDeviceId } = require('./device');
 
 function db() {
   return wx.cloud.database({ env: CLOUD.ENV });
@@ -58,38 +59,11 @@ function normalize(list) {
     id: r._id,
     type: r.type,
     timestamp: r.timestamp,
-    openid: r._openid || '',
+    deviceId: r.deviceId || '',
     recorder: r.recorder || null,
   }));
 }
 
-// 通过云函数获取当前用户 openid（官方标准做法），持久化到本地避免重复调用。
-// 文档: cloud.getWXContext().OPENID
-const OPENID_KEY = '_potty_my_openid';
-let _myOpenid = '';
-try {
-  _myOpenid = wx.getStorageSync(OPENID_KEY) || '';
-} catch (e) { /* ignore */ }
-
-async function ensureOpenid() {
-  if (_myOpenid) return _myOpenid;
-  // 云函数获取（首次调用较慢，约 200-500ms）
-  try {
-    const res = await wx.cloud.callFunction({ name: 'getOpenid' });
-    _myOpenid = res.result && res.result.openid ? res.result.openid : '';
-    if (_myOpenid) {
-      try { wx.setStorageSync(OPENID_KEY, _myOpenid); } catch (e) { /* ignore */ }
-    }
-  } catch (e) {
-    console.warn('[cloud] getOpenid callFunction failed:', e);
-  }
-  return _myOpenid;
-}
-
-function getMyOpenid() { return _myOpenid; }
-
-// 家庭量级数据量小，一次拉取全部（上限 1000）后在本地过滤/分组，
-// 避免多次请求。数据量大时可按需加分页。
 async function getRecords() {
   const res = await coll().orderBy('timestamp', 'desc').limit(1000).get();
   const list = normalize(res.data || []);
@@ -101,11 +75,10 @@ async function addRecord(type, recorder) {
   const data = {
     type,
     timestamp: new Date().toISOString(),
+    deviceId: getDeviceId(),
     recorder: recorder || null,
   };
   const res = await coll().add({ data });
-  // 确保 openid 已获取（用于历史页删除按钮判断）
-  ensureOpenid();
   return { id: res._id, ...data };
 }
 
@@ -172,6 +145,5 @@ module.exports = {
   getTodayRecords,
   getGroupedRecords,
   toTempUrl,
-  getMyOpenid,
   dateKey,
 };

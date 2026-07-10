@@ -3,6 +3,7 @@
 // 移植自 H5 项目的 src/utils/storage.js
 // ============================================================
 const { STORAGE_KEYS } = require('../config');
+const { getDeviceId } = require('./device');
 
 // 本地日期 key（yyyy-MM-dd）。iOS/Android 均可被 new Date() 安全解析；
 // 切勿用 toDateString()（如 "Thu Jul 09 2026"），iOS 无法解析会导致历史分组/排序出错。
@@ -28,6 +29,7 @@ function addRecord(type, recorder) {
     id: `${Date.now()}_${Math.floor(Math.random() * 1000)}`,
     type,
     timestamp: new Date().toISOString(),
+    deviceId: getDeviceId(),
     recorder: recorder || null, // 记录人快照 {nickname, avatarUrl}，跨设备展示用
   };
   list.push(record);
