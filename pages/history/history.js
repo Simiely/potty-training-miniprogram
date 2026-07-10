@@ -48,7 +48,7 @@ Page({
         color: TYPE_META[r.type].color,
         time: fmtTime(r.timestamp),
         recorder: r.recorder || null,
-        canDelete: !myOpenid || myOpenid === r.openid,
+        canDelete: myOpenid ? myOpenid === r.openid : false,
       }));
       return {
         date: g.date,
