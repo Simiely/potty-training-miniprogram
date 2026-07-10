@@ -23,6 +23,30 @@ function dateKey(ts) {
   return `${y}-${m}-${day}`;
 }
 
+// 把 cloud://fileID 批量转为临时可下载链接，解决跨用户头像访问权限问题。
+// 云存储默认仅上传者可读，其他用户通过 fileID 无法直接显示。
+async function resolveAvatarUrls(list) {
+  const fileIds = [];
+  const positions = [];
+  list.forEach((r, ri) => {
+    if (r.recorder && r.recorder.avatarUrl && r.recorder.avatarUrl.startsWith('cloud://')) {
+      fileIds.push(r.recorder.avatarUrl);
+      positions.push(ri);
+    }
+  });
+  if (fileIds.length === 0) return;
+  try {
+    const res = await wx.cloud.getTempFileURL({ fileList: fileIds });
+    res.fileList.forEach((f, i) => {
+      if (f.tempFileURL) {
+        list[positions[i]].recorder.avatarUrl = f.tempFileURL;
+      }
+    });
+  } catch (e) {
+    console.warn('[cloud] getTempFileURL failed:', e);
+  }
+}
+
 // 把云端文档归一化为页面通用结构（用 id 统一代替 _id）
 function normalize(list) {
   return list.map((r) => ({
@@ -37,7 +61,9 @@ function normalize(list) {
 // 避免多次请求。数据量大时可按需加分页。
 async function getRecords() {
   const res = await coll().orderBy('timestamp', 'desc').limit(1000).get();
-  return normalize(res.data || []);
+  const list = normalize(res.data || []);
+  await resolveAvatarUrls(list);
+  return list;
 }
 
 async function addRecord(type, recorder) {
