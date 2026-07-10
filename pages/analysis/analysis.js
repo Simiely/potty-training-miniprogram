@@ -22,7 +22,7 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 1 });
     }
-    this.load();
+    wx.nextTick(() => this.load());
   },
   onPullDownRefresh() { this.load().then(() => wx.stopPullDownRefresh()); },
 

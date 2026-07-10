@@ -52,8 +52,11 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 0 });
     }
-    this.refreshRecorder();
-    this.loadData();
+    // wx.nextTick 确保首帧渲染完成后再加载数据，避免 lazyCodeLoading 下的渲染层警告
+    wx.nextTick(() => {
+      this.refreshRecorder();
+      this.loadData();
+    });
   },
   onPullDownRefresh() { this.loadData().then(() => wx.stopPullDownRefresh()); },
 
