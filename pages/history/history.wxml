@@ -42,7 +42,7 @@
                 <text class="hd-rname">{{rec.recorder.nickname}}</text>
               </view>
             </view>
-            <view class="hd-del" catchtap="onDelete" data-id="{{rec.id}}">🗑</view>
+            <view wx:if="{{rec.canDelete}}" class="hd-del" catchtap="onDelete" data-id="{{rec.id}}">🗑</view>
           </view>
         </view>
 

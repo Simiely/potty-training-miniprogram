@@ -58,9 +58,14 @@ function normalize(list) {
     id: r._id,
     type: r.type,
     timestamp: r.timestamp,
+    openid: r._openid || '',
     recorder: r.recorder || null,
   }));
 }
+
+// 缓存当前用户的 openid，首次创建记录后 via getOwnOpenid 写入。
+let _myOpenid = '';
+function getMyOpenid() { return _myOpenid; }
 
 // 家庭量级数据量小，一次拉取全部（上限 1000）后在本地过滤/分组，
 // 避免多次请求。数据量大时可按需加分页。
@@ -78,6 +83,13 @@ async function addRecord(type, recorder) {
     recorder: recorder || null,
   };
   const res = await coll().add({ data });
+  // 首次创建记录时获取当前用户 openid
+  if (!_myOpenid) {
+    try {
+      const doc = await coll().doc(res._id).get();
+      _myOpenid = (doc.data && doc.data._openid) || '';
+    } catch (e) { /* ignore */ }
+  }
   return { id: res._id, ...data };
 }
 
@@ -144,5 +156,6 @@ module.exports = {
   getTodayRecords,
   getGroupedRecords,
   toTempUrl,
+  getMyOpenid,
   dateKey,
 };

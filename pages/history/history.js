@@ -1,6 +1,7 @@
 const { TYPE_META } = require('../../config');
 const store = require('../../utils/store');
 const { dateKey } = require('../../utils/storage');
+const { getMyOpenid } = require('../../utils/cloud');
 
 const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
@@ -34,6 +35,7 @@ Page({
   onPullDownRefresh() { this.load().then(() => wx.stopPullDownRefresh()); },
 
   async load() {
+    const myOpenid = getMyOpenid();
     const todayStr = dateKey(Date.now());
     const grouped = await store.getGroupedRecords();
     const groups = grouped.map((g) => {
@@ -46,6 +48,7 @@ Page({
         color: TYPE_META[r.type].color,
         time: fmtTime(r.timestamp),
         recorder: r.recorder || null,
+        canDelete: !myOpenid || myOpenid === r.openid,
       }));
       return {
         date: g.date,
@@ -89,8 +92,8 @@ Page({
 
   _clearStep1() {
     wx.showModal({
-      title: '⚠️ 清空全部数据 (1/3)',
-      content: '确定要删除所有记录吗？此操作无法撤销。',
+      title: '⚠️ 清空我的记录 (1/3)',
+      content: '仅删除你创建的记录，家人的记录不受影响。确定继续吗？',
       success: (r) => { if (r.confirm) this._clearStep2(); },
     });
   },
@@ -98,7 +101,7 @@ Page({
   _clearStep2() {
     wx.showModal({
       title: '⚠️⚠️ 再次确认 (2/3)',
-      content: '所有历史数据将被永久清除，确认继续吗？',
+      content: '你创建的记录将被永久清除，且无法恢复。确认继续吗？',
       success: (r) => { if (r.confirm) this._clearStep3(); },
     });
   },
@@ -106,12 +109,12 @@ Page({
   async _clearStep3() {
     wx.showModal({
       title: '⚠️⚠️⚠️ 最后一次确认 (3/3)',
-      content: '此操作不可恢复！确认删除全部记录？',
+      content: '此操作不可恢复！确认删除你的全部记录？',
       success: async (r) => {
         if (r.confirm) {
           await store.clearAllRecords();
           this.load();
-          wx.showToast({ title: '已清空', icon: 'none' });
+          wx.showToast({ title: '已清空我的记录', icon: 'none' });
         }
       },
     });
