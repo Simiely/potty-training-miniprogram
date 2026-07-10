@@ -35,8 +35,7 @@ Page({
   onPullDownRefresh() { this.load().then(() => wx.stopPullDownRefresh()); },
 
   async load() {
-    // 确保 openid 已获取，否则历史页无法区分自己和他人的记录
-    await require('../../utils/cloud').ensureOpenid();
+    // openid 从本地存储读取，首次创建记录时由 addRecord 触发云函数获取并持久化
     const myOpenid = getMyOpenid();
     const todayStr = dateKey(Date.now());
     const grouped = await store.getGroupedRecords();
