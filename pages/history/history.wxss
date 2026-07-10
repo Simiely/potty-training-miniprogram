@@ -36,7 +36,7 @@
 .hd-item { display: flex; align-items: center; justify-content: space-between; padding: 16rpx; }
 .hd-left { display: flex; align-items: center; gap: 16rpx; flex-wrap: wrap; }
 .hd-dot { width: 16rpx; height: 16rpx; border-radius: 50%; }
-.hd-name { font-size: 26rpx; font-weight: 500; }
+.hd-name { font-size: 26rpx; font-weight: 500; min-width: 180rpx; }
 .hd-time { font-size: 22rpx; color: var(--text-muted); }
 .hd-recorder { display: flex; align-items: center; gap: 8rpx; margin-left: 8rpx; padding-left: 16rpx; border-left: 1rpx solid var(--border); }
 .hd-avatar { width: 36rpx; height: 36rpx; border-radius: 50%; border: 2rpx solid var(--border); }

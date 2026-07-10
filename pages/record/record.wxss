@@ -115,7 +115,7 @@
 .t-underwear::before { background: #66BB6A; }
 .t-diaper::before { background: #BA68C8; }
 .tl-line { display: flex; align-items: center; gap: 16rpx; flex-wrap: wrap; }
-.tl-line .name { font-size: 26rpx; font-weight: 600; }
+.tl-line .name { font-size: 26rpx; font-weight: 600; min-width: 180rpx; }
 .tl-line .time { font-size: 22rpx; color: var(--text-muted); }
 .tl-recorder { display: flex; align-items: center; gap: 8rpx; margin-left: auto; }
 .tl-avatar { width: 36rpx; height: 36rpx; border-radius: 50%; border: 2rpx solid var(--border); }
