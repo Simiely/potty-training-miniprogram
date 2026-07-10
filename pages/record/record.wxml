@@ -125,7 +125,7 @@
         <view wx:else class="edit-avatar edit-avatar-empty">👤</view>
         <text class="avatar-tip">点击选择头像</text>
       </button>
-      <input class="nick-input" type="nickname" placeholder="点击获取微信昵称或输入" placeholder-class="nick-ph" value="{{editNickname}}" bindinput="onNickInput" bindblur="onNickInput" />
+      <input class="nick-input" type="nickname" placeholder="点击获取微信昵称或输入" placeholder-class="nick-ph" value="{{editNickname}}" bindinput="onNickInput" />
       <view class="editor-actions">
         <view class="ebtn ebtn-cancel" bindtap="closeEditor">取消</view>
         <view class="ebtn ebtn-save" bindtap="saveProfile">保存</view>
