@@ -63,8 +63,29 @@ function normalize(list) {
   }));
 }
 
-// 缓存当前用户的 openid，首次创建记录后 via getOwnOpenid 写入。
+// 通过云函数获取当前用户 openid（官方标准做法），持久化到本地避免重复调用。
+// 文档: cloud.getWXContext().OPENID
+const OPENID_KEY = '_potty_my_openid';
 let _myOpenid = '';
+try {
+  _myOpenid = wx.getStorageSync(OPENID_KEY) || '';
+} catch (e) { /* ignore */ }
+
+async function ensureOpenid() {
+  if (_myOpenid) return _myOpenid;
+  // 云函数获取（首次调用较慢，约 200-500ms）
+  try {
+    const res = await wx.cloud.callFunction({ name: 'getOpenid' });
+    _myOpenid = res.result && res.result.openid ? res.result.openid : '';
+    if (_myOpenid) {
+      try { wx.setStorageSync(OPENID_KEY, _myOpenid); } catch (e) { /* ignore */ }
+    }
+  } catch (e) {
+    console.warn('[cloud] getOpenid callFunction failed:', e);
+  }
+  return _myOpenid;
+}
+
 function getMyOpenid() { return _myOpenid; }
 
 // 家庭量级数据量小，一次拉取全部（上限 1000）后在本地过滤/分组，
@@ -83,13 +104,8 @@ async function addRecord(type, recorder) {
     recorder: recorder || null,
   };
   const res = await coll().add({ data });
-  // 首次创建记录时获取当前用户 openid
-  if (!_myOpenid) {
-    try {
-      const doc = await coll().doc(res._id).get();
-      _myOpenid = (doc.data && doc.data._openid) || '';
-    } catch (e) { /* ignore */ }
-  }
+  // 确保 openid 已获取（用于历史页删除按钮判断）
+  ensureOpenid();
   return { id: res._id, ...data };
 }
 

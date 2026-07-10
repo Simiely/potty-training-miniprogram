@@ -35,6 +35,8 @@ Page({
   onPullDownRefresh() { this.load().then(() => wx.stopPullDownRefresh()); },
 
   async load() {
+    // 确保 openid 已获取，否则历史页无法区分自己和他人的记录
+    await require('../../utils/cloud').ensureOpenid();
     const myOpenid = getMyOpenid();
     const todayStr = dateKey(Date.now());
     const grouped = await store.getGroupedRecords();
