@@ -50,9 +50,11 @@ App({
 
     // 启动即检查是否已通过校验（授权 + 密码）。已校验则直接进入记录页，
     // 否则由 lock 页作为首页处理授权与密码。
+    // 用 setTimeout 延迟 switchTab，避免 lazyCodeLoading 下自定义 tabBar
+    // 尚未注入时触发 "Expected updated data but get first rendering data" 框架 bug。
     const verified = wx.getStorageSync(STORAGE_KEYS.VERIFIED);
     if (verified) {
-      wx.switchTab({ url: '/pages/record/record' });
+      setTimeout(() => wx.switchTab({ url: '/pages/record/record' }), 50);
     }
   },
 });

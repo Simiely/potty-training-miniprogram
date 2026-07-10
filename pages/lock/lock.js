@@ -15,9 +15,10 @@ Page({
 
   onLoad() {
     // 已校验过（授权 + 密码正确）则直接进入，不再弹锁屏
+    // 延迟 switchTab 避免 lazyCodeLoading 下 tabBar 未注入时触发渲染警告
     const verified = wx.getStorageSync(STORAGE_KEYS.VERIFIED);
     if (verified) {
-      wx.switchTab({ url: '/pages/record/record' });
+      setTimeout(() => wx.switchTab({ url: '/pages/record/record' }), 50);
       return;
     }
     // 自定义导航下，把状态栏文字设为白色以适配暖色渐变
@@ -80,7 +81,7 @@ Page({
       authContent: '验证指纹进入',
       success: () => {
         wx.setStorageSync(STORAGE_KEYS.VERIFIED, true);
-        wx.switchTab({ url: '/pages/record/record' });
+        setTimeout(() => wx.switchTab({ url: '/pages/record/record' }), 50);
       },
       fail: () => wx.showToast({ title: '指纹验证失败，请用密码', icon: 'none' }),
     });
