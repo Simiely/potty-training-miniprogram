@@ -63,19 +63,9 @@ function normalize(list) {
   }));
 }
 
-// 缓存当前用户的 openid，持久化到本地存储避免重启丢失。
-// 首次创建记录时自动获取，之后从 storage 读取。
-const OPENID_KEY = '_potty_my_openid';
+// 缓存当前用户的 openid，首次创建记录后 via getOwnOpenid 写入。
 let _myOpenid = '';
-try {
-  _myOpenid = wx.getStorageSync(OPENID_KEY) || '';
-} catch (e) { /* ignore */ }
 function getMyOpenid() { return _myOpenid; }
-function setMyOpenid(oid) {
-  if (!oid) return;
-  _myOpenid = oid;
-  try { wx.setStorageSync(OPENID_KEY, oid); } catch (e) { /* ignore */ }
-}
 
 // 家庭量级数据量小，一次拉取全部（上限 1000）后在本地过滤/分组，
 // 避免多次请求。数据量大时可按需加分页。
@@ -93,11 +83,11 @@ async function addRecord(type, recorder) {
     recorder: recorder || null,
   };
   const res = await coll().add({ data });
-  // 首次创建记录时获取并持久化当前用户 openid
+  // 首次创建记录时获取当前用户 openid
   if (!_myOpenid) {
     try {
       const doc = await coll().doc(res._id).get();
-      setMyOpenid((doc.data && doc.data._openid) || '');
+      _myOpenid = (doc.data && doc.data._openid) || '';
     } catch (e) { /* ignore */ }
   }
   return { id: res._id, ...data };
