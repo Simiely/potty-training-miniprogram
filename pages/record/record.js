@@ -110,6 +110,7 @@ Page({
         confLabel: conf.label,
         confDesc: conf.desc,
         windowState,
+        progressWidth: Math.min(pred.sampleSize / 2 * 100, 100),
       },
     });
   },

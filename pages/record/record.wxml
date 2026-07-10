@@ -72,7 +72,7 @@
     <block wx:if="{{!prediction.hasEnough}}">
       <view class="empty-center">📝 至少需要记录 2 次大便才能进行预测
         <view style="margin-top:16rpx;font-size:24rpx;">当前已记录 {{prediction.sampleSize}} 次</view>
-        <view class="prog"><view class="prog-bar" style="width:{{prediction.sampleSize / 2 * 100}}%"></view></view>
+        <view class="prog"><view class="prog-bar" style="width:{{prediction.progressWidth}}%"></view></view>
       </view>
     </block>
 
