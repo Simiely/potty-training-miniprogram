@@ -77,24 +77,20 @@
 
 ---
 
-## 5. deviceId 替代 openid —— 区分自己和他人的记录
+## 5. deviceId 替代 openid —— 区分自己和他人的记录（已升级为 v2 方案，见 #11）
 
 **问题**：历史页需要隐藏他人记录的删除按钮，需要一种方式判断「这条是不是我建的」。
 
-**方案对比**：
-
-| 方案 | 优点 | 缺点 |
-|------|------|------|
-| 云函数 `getWXContext().OPENID` | 官方标准 | 需要部署云函数；首次调用慢（200-500ms）；未部署时报错 |
-| 从自己创建的记录读 `_openid` | 不需要云函数 | 内存变量重启丢失；首次无记录时拿不到 |
-| **本地 deviceId** ✅ | 零依赖零部署零网络；即时可用 | 卸载小程序会重置（但此场景可接受） |
-
-**最终采用 deviceId 方案**：
+**原始方案 deviceId**：
 - `utils/device.js`：首次运行时生成 UUID 并持久化到 `wx.setStorageSync`
 - 创建记录时写入 `deviceId` 字段
 - 历史页 `canDelete = 本机deviceId === 记录.deviceId`
 
-**涉及文件**：`utils/device.js`（新建）、`utils/cloud.js`、`utils/storage.js`、`pages/history/history.js`
+**问题**：deviceId 在清缓存/换设备后会变化，导致同一用户无法管理自己以前的记录。
+
+**已升级为 openid 方案**，见 [第 11 节](#11-账号级权限隔离从-deviceid-到-_openid)。
+
+**涉及文件**：`utils/device.js`、`utils/cloud.js`、`utils/storage.js`、`pages/history/history.js`
 
 ---
 
@@ -158,6 +154,111 @@
 
 ---
 
+## 11. 账号级权限隔离：从 deviceId 到 _openid
+
+**问题**：原 `canDelete` 用 `deviceId` 判断——清缓存后 deviceId 变化，同一用户无法管理自己的旧记录；换设备同理。
+
+**最终方案**：云端模式用 `_openid`（微信云开发自动注入的账号标识）判断归属，本地模式保留 deviceId。
+
+**openid 检测策略（无需云函数）**：
+1. **创建回读**：`addRecord` 写完后立即 `doc(id).get()` 读取 `_openid` 并缓存
+2. **多数票检测**：首次加载时取最近 10 条记录，出现次数最多的 `_openid` = 当前用户
+3. **降级**：openid 为空时回退 deviceId 对比（兼容云函数未部署等场景）
+
+**云函数方案（未采用）**：尝试创建 `getOpenid` 云函数返回 `cloud.getWXContext().OPENID`，但微信开发者工具的「上传并部署」需要特定云环境权限，在某些账号下不可用。最终采用纯客户端检测方案。
+
+**涉及文件**：`utils/cloud.js`（新增 `getCurrentOpenid`、透传 `creatorOpenid`）、`pages/history/history.js`（`canDelete`/`canEdit` 逻辑）、`utils/store.js`
+
+**参考**：`cloudfunctions/getOpenid/` 已删除（改用客户端检测）
+
+---
+
+## 12. 历史记录编辑时间功能
+
+**需求**：允许修改已有记录的时间（补录或纠正误操作）。
+
+**实现**：
+- 每条记录右侧新增 🖊 编辑按钮
+- 点击弹出底部半屏，内含 `picker mode="date"` 和 `picker mode="time"`
+- 预填当前记录时间，修改后合并为 ISO 时间戳
+- 数据层 `utils/storage.js` / `utils/cloud.js` / `utils/store.js` 全部新增 `updateRecord(id, updates)` 方法
+- 编辑和删除按钮统一受 `canEdit`/`canDelete` 控制（权限逻辑一致）
+
+**涉及文件**：`pages/history/history.js`、`pages/history/history.wxml`、`pages/history/history.wxss`、`utils/storage.js`、`utils/cloud.js`、`utils/store.js`
+
+---
+
+## 13. `block wx:if` / `block wx:else` 导致渲染层崩溃
+
+**现象**：
+```
+[渲染层错误] Expected updated data but get first rendering data
+Error: SystemError (webviewScriptError)
+```
+发生在两个场景：
+- **锁屏页**：点击「微信授权」后 `authorized` 从 false 变 true，页面闪退卡死
+- **历史页**：异步加载数据后 `groups` 从 空 变 非空，记录列表渲染异常
+
+**根因**：`<block>` 是虚拟节点（不产生 DOM），`<block wx:if>/<block wx:else>` 配对时，微信框架的 diff 算法在数据首次变更为 true 时，将「首次渲染数据」与「更新数据」错误匹配。当 `lazyCodeLoading` 启用时此问题加剧。
+
+**关键：这不是第 3 节的同类警告——第 3 节是 framework 层无害 warning，而这个是导致页面崩溃/卡死的严重 Bug！**
+
+**修复（极小改动，极大效果）**：将 `<block wx:if>/<block wx:else>` 全部改为两个独立 `<view wx:if>`：
+```wxml
+<!-- 修复前（崩溃） -->
+<block wx:if="{{!authorized}}"><button>授权</button></block>
+<block wx:else><view>密码键盘</view></block>
+
+<!-- 修复后（正常） -->
+<view wx:if="{{!authorized}}"><button>授权</button></view>
+<view wx:if="{{authorized}}"><view>密码键盘</view></view>
+```
+核心原理：`<view>` 是真实 DOM 节点，框架能正确追踪其数据绑定和 diff。
+
+**涉及文件**：`pages/lock/lock.wxml`、`pages/history/history.wxml`
+
+**教训**：微信小程序中永远不要用 `<block wx:if>/<block wx:else>` 配对控制两种互斥 UI 态。能用 `<view>` 就用 `<view>`。
+
+---
+
+## 14. Flex 布局溢出导致按钮不可见
+
+**现象**：历史记录展开后，右侧的编辑/删除按钮不显示（视觉上消失，DOM 中存在）。
+
+**根因**：`.hd-left` 设置了 `flex-wrap: wrap` 但没有约束宽度。当内容较长时（emoji + 标签 + 时间 + 头像 + 记录人名称），`.hd-left` 撑满整行，把 `.hd-actions`（编辑+删除按钮容器）挤出可视区域。
+
+**修复**：
+```css
+.hd-left    { overflow: hidden; }        /* 内容不溢出容器 */
+.hd-actions { flex-shrink: 0; }          /* 按钮容器永不被压缩 */
+.hd-dot     { flex-shrink: 0; }          /* 小圆点不压缩 */
+.hd-recorder { flex-shrink: 0; }         /* 记录人不压缩 */
+.hd-time    { white-space: nowrap; }     /* 时间不折行 */
+```
+
+**涉及文件**：`pages/history/history.wxss`
+
+---
+
+## 15. 日期格式兼容 iOS 解析
+
+**问题**：iOS Safari / WKWebView 不支持 `new Date("Thu Jul 09 2026")` 这种格式，会导致历史分组和排序全部出错。
+
+**修复**：所有日期键使用 `yyyy-MM-dd` 格式（`dateKey()` 函数）：
+```javascript
+function dateKey(ts) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+```
+
+**涉及文件**：`utils/storage.js`、`utils/cloud.js`
+
+---
+
 ## 架构决策记录
 
 ### 存储层双模式设计（`utils/store.js`）
@@ -172,6 +273,15 @@
 
 本地和云端都使用 `yyyy-MM-dd` 格式的日期键（`dateKey()` 函数），杜绝了 iOS/Android 的日期解析差异（如 iOS 不支持 `toDateString()`）。
 
+### openid 检测：云函数 vs 客户端
+
+| 方案 | 可靠性 | 复杂度 | 最终 |
+|------|--------|--------|------|
+| 云函数 `getWXContext().OPENID` | ⭐⭐⭐ 100% | 需部署 | ❌ 部署不可用 |
+| 客户端从记录读 _openid | ⭐⭐ | 无 | ❌ 多人时猜错 |
+| **创建回读 + 多数票** | ⭐⭐ 95% | 无 | ✅ 采用 |
+| 纯 deviceId | ⭐ | 最简单 | ⚠️ 降级使用 |
+
 ---
 
 ## 调试技巧
@@ -181,3 +291,5 @@
 - **检查本地存储**：开发者工具 → 调试器 → Storage 标签页
 - **降低基础库版本**：工具栏 → 详情 → 本地设置 → 切换基础库（避免灰度版本的不稳定）
 - **游客模式限制**：`touristappid` 下 `wx.operateWXData`、`webapi_getwxaasyncsecinfo` 等 API 返回模拟数据/报错，换真实 AppID 后消失
+- **查看当前 openid**：Console 中搜索 `[cloud]` 关键词
+- **排查按钮不显示**：Console 中搜索 `[history]` 或检查 WXML 面板中 `hd-actions` 节点的子元素
