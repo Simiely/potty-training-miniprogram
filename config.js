@@ -4,7 +4,7 @@
 
 // 锁屏固定密码（4 位数字）。请修改为你的实际密码。
 // 仅首次打开小程序时需要输入；输入正确后设备被信任，之后不再弹锁屏。
-const LOCK_PASSWORD = '2411';
+const LOCK_PASSWORD = '0000'; // ⚠️ 请改为你的4位密码
 
 // 本地存储 key
 const STORAGE_KEYS = {
@@ -24,9 +24,9 @@ const STORAGE_KEYS = {
 //   4) 把 USE_CLOUD 改为 true
 // 未配置前 USE_CLOUD=false，工程仍按本地存储运行（touristappid 也能跑）。
 // ============================================================
-const USE_CLOUD = false;        // ⚠️ 待填：配置好云环境后改成 true（第 4 步）
+const USE_CLOUD = true;        // ⚠️ 待填：配置好云环境后改成 true（第 4 步）
 const CLOUD = {
-  ENV: '',                       // ⚠️ 待填：粘贴你的云开发环境 ID，如 cloud1-xxxxxx（第 2 步）
+  ENV: 'cloud1-d7gidvb3v5062dc05',                       // ⚠️ 待填：粘贴你的云开发环境 ID，如 cloud1-xxxxxx（第 2 步）
   COLLECTION_RECORDS: 'potty_records',
 };
 

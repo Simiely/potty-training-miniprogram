@@ -31,6 +31,12 @@ module.exports = {
     return Promise.resolve();
   },
 
+  updateRecord(id, updates) {
+    if (cloudReady()) return cloud.updateRecord(id, updates);
+    local.updateRecord(id, updates);
+    return Promise.resolve();
+  },
+
   clearAllRecords() {
     if (cloudReady()) return cloud.clearAllRecords();
     local.clearAllRecords();
@@ -46,4 +52,9 @@ module.exports = {
   },
 
   dateKey: local.dateKey,
+
+  // 云模式：获取当前用户 openid（用于账号级归属判断）
+  getCurrentOpenid() {
+    return cloud.getCurrentOpenid();
+  },
 };

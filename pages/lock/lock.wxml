@@ -8,13 +8,13 @@
     <view class="lock-appname">宝宝如厕训练助手</view>
 
     <!-- 未授权：先微信授权 -->
-    <block wx:if="{{!authorized}}">
+    <view wx:if="{{!authorized}}">
       <view class="lock-prompt">需要微信授权后使用</view>
       <button class="auth-btn" bindtap="onAuth">微信一键授权</button>
-    </block>
+    </view>
 
     <!-- 已授权：输入 4 位密码 -->
-    <block wx:else>
+    <view wx:if="{{authorized}}">
       <view class="lock-prompt">请输入 4 位锁屏密码</view>
 
       <view class="lock-dots {{shaking ? 'shake' : ''}}">
@@ -53,6 +53,6 @@
         <view class="lk" bindtap="onBio">🔒 使用指纹 / 面容</view>
       </view>
       <view class="lock-harmony-tip" wx:if="{{isHarmony}}">鸿蒙设备请使用 4 位密码解锁</view>
-    </block>
+    </view>
   </view>
 </view>

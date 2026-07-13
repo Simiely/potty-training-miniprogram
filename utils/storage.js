@@ -75,9 +75,19 @@ function getGroupedRecords() {
     .sort((a, b) => b.date.localeCompare(a.date));
 }
 
+function updateRecord(id, updates) {
+  const list = getRecords();
+  const idx = list.findIndex((r) => r.id === id);
+  if (idx === -1) return null;
+  list[idx] = { ...list[idx], ...updates };
+  saveRecords(list);
+  return list[idx];
+}
+
 module.exports = {
   getRecords,
   addRecord,
+  updateRecord,
   deleteRecord,
   clearAllRecords,
   getTodayRecords,

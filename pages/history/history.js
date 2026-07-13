@@ -11,11 +11,27 @@ function fmtTime(ts) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function parseTimestamp(ts) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  return {
+    date: `${y}-${m}-${day}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  };
+}
+
 Page({
   data: {
     navHeight: 64,
     groups: [],
     expanded: {},
+    // 编辑时间
+    showEditor: false,
+    editRecordId: '',
+    editDate: '',
+    editTime: '',
   },
 
   onLoad() {
@@ -37,18 +53,32 @@ Page({
   async load() {
     const todayStr = dateKey(Date.now());
     const grouped = await store.getGroupedRecords();
+    const currentDeviceId = getDeviceId();
+    const currentOpenid = await store.getCurrentOpenid();
+    const isCloud = store.cloudReady();
     const groups = grouped.map((g) => {
       const d = new Date(g.date);
-      const records = g.records.map((r) => ({
-        id: r.id,
-        type: r.type,
-        emoji: TYPE_META[r.type].emoji,
-        label: TYPE_META[r.type].label,
-        color: TYPE_META[r.type].color,
-        time: fmtTime(r.timestamp),
-        recorder: r.recorder || null,
-        canDelete: getDeviceId() === r.deviceId,
-      }));
+      const records = g.records.map((r) => {
+        // 云模式：优先按微信账号 _openid 判断（需云函数已部署）；
+        // 云函数未部署时降级为 deviceId，确保至少有按钮可用。
+        const canDel = isCloud
+          ? (currentOpenid
+              ? (r.creatorOpenid && currentOpenid === r.creatorOpenid)
+              : (currentDeviceId === r.deviceId))   // 云函数未部署时的降级
+          : (currentDeviceId === r.deviceId);
+        return {
+          id: r.id,
+          type: r.type,
+          timestamp: r.timestamp,
+          emoji: TYPE_META[r.type].emoji,
+          label: TYPE_META[r.type].label,
+          color: TYPE_META[r.type].color,
+          time: fmtTime(r.timestamp),
+          recorder: r.recorder || null,
+          canEdit: canDel,
+          canDelete: canDel,
+        };
+      });
       return {
         date: g.date,
         dateLabel: `${d.getMonth() + 1}月${d.getDate()}日 ${WEEKDAYS[d.getDay()]}`,
@@ -83,6 +113,42 @@ Page({
         }
       },
     });
+  },
+
+  // —— 编辑时间 ——
+  noop() {},
+
+  onEdit(e) {
+    const id = e.currentTarget.dataset.id;
+    const ts = e.currentTarget.dataset.ts;
+    const parsed = parseTimestamp(ts);
+    this.setData({
+      showEditor: true,
+      editRecordId: id,
+      editDate: parsed.date,
+      editTime: parsed.time,
+    });
+  },
+
+  closeEditor() {
+    this.setData({ showEditor: false });
+  },
+
+  onDateChange(e) {
+    this.setData({ editDate: e.detail.value });
+  },
+
+  onTimeChange(e) {
+    this.setData({ editTime: e.detail.value });
+  },
+
+  async saveEdit() {
+    const { editRecordId, editDate, editTime } = this.data;
+    const newTs = new Date(`${editDate}T${editTime}:00`).toISOString();
+    await store.updateRecord(editRecordId, { timestamp: newTs });
+    this.setData({ showEditor: false });
+    this.load();
+    wx.showToast({ title: '时间已更新', icon: 'success' });
   },
 
   onClearAll() {

@@ -2,11 +2,36 @@
 // 云开发数据层（方案 B：跨设备共享记录）
 // 集合 potty_records 文档结构：
 //   { _id, _openid, type, timestamp(ISO), deviceId, recorder:{nickname, avatarUrl} }
-// deviceId 为本地生成的设备标识，用于区分本设备和他人创建的记录。
-// 全部方法返回 Promise；调用前请确保 USE_CLOUD=true 且已 wx.cloud.init。
+// _openid 由微信云开发自动注入，标识记录创建者的微信账号。
+// 当前用户的 _openid 在首次 getRecords 时自动检测并缓存，用于 canDelete 判断。
 // ============================================================
 const { CLOUD } = require('../config');
 const { getDeviceId } = require('./device');
+
+// 当前用户的 openid（首次调用时从已有记录自动检测，创建新记录时也会缓存）
+let _currentOpenid = '';
+
+async function getCurrentOpenid() {
+  if (_currentOpenid) return _currentOpenid;
+  // 无需云函数：从现有记录中检测。取最近 10 条中 _openid 出现次数最多的作为当前用户。
+  try {
+    const res = await coll().orderBy('timestamp', 'desc').limit(10).get();
+    const counters = {};
+    (res.data || []).forEach((r) => {
+      if (r._openid) counters[r._openid] = (counters[r._openid] || 0) + 1;
+    });
+    const ids = Object.keys(counters);
+    if (ids.length > 0) {
+      ids.sort((a, b) => counters[b] - counters[a]);
+      _currentOpenid = ids[0];
+      console.log('[cloud] current openid detected ✓');
+      return _currentOpenid;
+    }
+  } catch (e) {
+    console.warn('[cloud] openid detection failed:', e.message);
+  }
+  return '';
+}
 
 function db() {
   return wx.cloud.database({ env: CLOUD.ENV });
@@ -53,13 +78,15 @@ async function resolveAvatarUrls(list) {
   }
 }
 
-// 把云端文档归一化为页面通用结构（用 id 统一代替 _id）
+// 把云端文档归一化为页面通用结构（用 id 统一代替 _id），
+// 同时透传 _openid 为 creatorOpenid 供账号级归属判断。
 function normalize(list) {
   return list.map((r) => ({
     id: r._id,
     type: r.type,
     timestamp: r.timestamp,
     deviceId: r.deviceId || '',
+    creatorOpenid: r._openid || '',
     recorder: r.recorder || null,
   }));
 }
@@ -79,11 +106,25 @@ async function addRecord(type, recorder) {
     recorder: recorder || null,
   };
   const res = await coll().add({ data });
+  // 创建记录后立即读取 _openid 并缓存（一次查询，终生有效）
+  if (!_currentOpenid) {
+    try {
+      const doc = await coll().doc(res._id).get();
+      if (doc.data && doc.data._openid) {
+        _currentOpenid = doc.data._openid;
+        console.log('[cloud] openid cached from new record ✓');
+      }
+    } catch (e) { /* 忽略，下次加载时 majority vote 兜底 */ }
+  }
   return { id: res._id, ...data };
 }
 
 async function deleteRecord(id) {
   await coll().doc(id).remove();
+}
+
+async function updateRecord(id, updates) {
+  await coll().doc(id).update({ data: updates });
 }
 
 // 云数据库无「按条件批量删」客户端 API，逐条删（受集合权限约束，仅能删自己创建的）。
@@ -140,10 +181,12 @@ async function getGroupedRecords() {
 module.exports = {
   getRecords,
   addRecord,
+  updateRecord,
   deleteRecord,
   clearAllRecords,
   getTodayRecords,
   getGroupedRecords,
   toTempUrl,
+  getCurrentOpenid,
   dateKey,
 };
