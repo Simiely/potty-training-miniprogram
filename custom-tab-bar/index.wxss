@@ -4,8 +4,12 @@
   right: 0;
   bottom: 0;
   display: flex;
-  background: #FFFFFF;
-  border-top: 1rpx solid #F0E4D8;
+  /* 磨砂玻璃：与 iPad Dock 统一材质（半透明暖色底 + 背景模糊 + 高光描边）。
+     手机为通栏底栏，用顶部高光细线作分隔；iPad 为居中浮坞，透明度更高。 */
+  background: rgba(255, 248, 242, 0.6);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1rpx solid rgba(255, 255, 255, 0.5);
   padding-bottom: env(safe-area-inset-bottom);
   z-index: 999;
 }
@@ -70,11 +74,11 @@
   font-weight: 600;
 }
 
-/* 深色模式：跟随系统，暖色暗调（背景/边框统一用主题变量，与全站一致） */
+/* 深色模式：跟随系统，暖色暗调（磨砂玻璃，与浅色材质统一） */
 @media (prefers-color-scheme: dark) {
   .tabbar {
-    background: var(--card-bg);
-    border-top-color: var(--border);
+    background: rgba(34, 27, 22, 0.6);
+    border-top-color: rgba(255, 255, 255, 0.12);
   }
   .label {
     color: #B0A597;
@@ -96,8 +100,9 @@
   padding: 8px 16px;
   padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
   bottom: calc(env(safe-area-inset-bottom) + 18px);
-  /* 磨砂玻璃：半透明暖色底 + 背景模糊；高光描边用浅色边框 + 顶部 inset 高光，模拟 macOS Dock 反光 */
-  background: rgba(255, 248, 242, 0.4);
+  /* 磨砂玻璃：半透明暖色底 + 背景模糊；高光描边用浅色边框 + 顶部 inset 高光，模拟 macOS Dock 反光。
+     iPad 浮坞透明度比手机通栏更高（更通透），故 alpha 取 0.3（手机为 0.6）。 */
+  background: rgba(255, 248, 242, 0.3);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.6);
@@ -121,7 +126,7 @@
    导致深色模式下 Dock 仍显示浅色。透明度也调高，让磨砂更明显。 */
 @media (prefers-color-scheme: dark) {
   .tabbar.tablet {
-    background: rgba(34, 27, 22, 0.42);
+    background: rgba(34, 27, 22, 0.3);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.18);
