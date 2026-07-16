@@ -98,22 +98,35 @@ function dateKey(ts) {
   return `${y}-${m}-${day}`;
 }
 
-// 把 cloud://fileID 批量转为临时可下载链接，复用带缓存+持久化的 toTempUrlBatch，
-// 冷启动也能命中（不再每次打开都重新请求 getTempFileURL）。
-async function attachAvatars(list) {
+// 把记录里的 cloud:// 头像转换为可渲染的临时链接，返回【新数组】（不修改入参，
+// 以保留缓存里 canonically 的 cloud:// fileID，供永久历史缓存反复重解、且不受
+// 临时链接 2 小时过期影响）。
+// 转换失败（文件缺失/云存储 500）时回退为空串，渲染层据此走占位图（👤），
+// 绝不让原始 cloud:// 直出到 <image src>（否则微信会按页面相对路径解析 → 500）。
+async function resolveRecordAvatars(records) {
+  if (!records || !records.length) return records;
   const fileIds = [];
   const positions = [];
-  list.forEach((r, ri) => {
-    if (r.recorder && r.recorder.avatarUrl && r.recorder.avatarUrl.startsWith('cloud://')) {
-      fileIds.push(r.recorder.avatarUrl);
-      positions.push(ri);
+  records.forEach((r, i) => {
+    const url = r.recorder && r.recorder.avatarUrl;
+    if (url && url.startsWith('cloud://')) {
+      fileIds.push(url);
+      positions.push(i);
     }
   });
-  if (fileIds.length === 0) return;
-  const map = await toTempUrlBatch(fileIds);
-  positions.forEach((i) => {
-    const url = map[list[i].recorder.avatarUrl];
-    if (url) list[i].recorder.avatarUrl = url;
+  let map = {};
+  if (fileIds.length) {
+    try { map = await toTempUrlBatch(fileIds); }
+    catch (e) { console.warn('[cloud] resolveRecordAvatars failed:', e); map = {}; }
+  }
+  return records.map((r) => {
+    if (!r.recorder) return r;
+    const raw = r.recorder.avatarUrl || '';
+    let viewUrl = raw;
+    if (raw.startsWith('cloud://')) {
+      viewUrl = map[raw] || ''; // 解析不到 → 占位，不直出 cloud://
+    }
+    return Object.assign({}, r, { recorder: Object.assign({}, r.recorder, { avatarUrl: viewUrl }) });
   });
 }
 
@@ -164,8 +177,7 @@ async function getRecords(days) {
       skip += PAGE_SIZE;
     }
     const list = normalize(all);
-    await attachAvatars(list);
-    return list;
+    return list; // 不在此转换头像：保留 cloud:// fileID 供永久缓存反复重解（渲染层再 resolveRecordAvatars）
   } catch (e) {
     // 不再静默返回空/部分数据,向上抛出清晰错误,让页面能提示用户
     console.error('[cloud] getRecords failed:', e);
@@ -197,8 +209,7 @@ async function getRecordsToday(startISO) {
       skip += PAGE_SIZE;
     }
     const list = normalize(all);
-    await attachAvatars(list);
-    return list;
+    return list; // 不在此转换头像：保留 cloud:// fileID（渲染层再 resolveRecordAvatars）
   } catch (e) {
     console.error('[cloud] getRecordsToday failed:', e);
     const err = new Error('云端读取失败：' + (e.errMsg || e.message || '请检查网络或云环境'));
@@ -290,8 +301,7 @@ async function getRecordsByDate(dateKeyStr) {
       skip += PAGE_SIZE;
     }
     const list = normalize(all);
-    await attachAvatars(list);
-    return list;
+    return list; // 不在此转换头像：保留 cloud:// fileID（渲染层再 resolveRecordAvatars）
   } catch (e) {
     console.error('[cloud] getRecordsByDate failed:', e);
     const err = new Error('云端读取失败：' + (e.errMsg || e.message || '请检查网络或云环境'));
@@ -397,6 +407,7 @@ module.exports = {
   getRecords,
   getRecordsToday,
   getRecordsByDate,
+  resolveRecordAvatars,
   addRecord,
   updateRecord,
   deleteRecord,

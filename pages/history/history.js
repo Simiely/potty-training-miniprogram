@@ -3,6 +3,7 @@ const store = require('../../utils/store');
 const { dateKey } = require('../../utils/storage');
 const { getDeviceId, detectTablet } = require('../../utils/device');
 const profile = require('../../utils/profile');
+const { resolveRecordAvatars } = require('../../utils/cloud');
 
 const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
@@ -73,6 +74,12 @@ Page({
   async _load(forceRefresh) {
     const todayStr = dateKey(Date.now());
     const grouped = await store.getGroupedRecords(forceRefresh);
+    // 统一解析所有记录头像（失败→占位），避免每条记录各自请求、且避免 cloud:// 直出 <image> 触发 500
+    const allRecs = [];
+    grouped.forEach((g) => g.records.forEach((r) => allRecs.push(r)));
+    const resolvedAll = await resolveRecordAvatars(allRecs);
+    const avatarById = {};
+    resolvedAll.forEach((r) => { avatarById[r.id] = r.recorder; });
     const currentDeviceId = getDeviceId();
     const currentOpenid = await store.getCurrentOpenid();
     const isCloud = store.cloudReady();
@@ -92,7 +99,7 @@ Page({
           label: TYPE_META[r.type].label,
           color: TYPE_META[r.type].color,
           time: fmtTime(r.timestamp),
-          recorder: r.recorder || null,
+          recorder: avatarById[r.id] || r.recorder || null,
           // 规则：只有「今天」的记录可修改（历史记录只读）。编辑/删除按钮仅当天显示，
           // 仍需通过 canDel 的归属校验（仅能改自己创建的记录）。
           canEdit: g.isToday && canDel,

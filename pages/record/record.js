@@ -1,7 +1,7 @@
 const { TYPE_META } = require('../../config');
 const store = require('../../utils/store');
 const profile = require('../../utils/profile');
-const { toTempUrlBatch } = require('../../utils/cloud');
+const { toTempUrlBatch, resolveRecordAvatars } = require('../../utils/cloud');
 const { predictNextPoop } = require('../../utils/analysis');
 const { detectTablet } = require('../../utils/device');
 
@@ -76,13 +76,11 @@ Page({
       if (p.avatarUrl && p.avatarUrl.startsWith('cloud://')) needConvert.push(p.avatarUrl);
     });
     const urlMap = await toTempUrlBatch(needConvert); // 带 90 分钟缓存，命中则零请求
-    // 用副本回写，避免污染 profile 内部对象（storage 里仍是 cloud:// fileID）
-    const safeRec = rec
-      ? Object.assign({}, rec, { avatarUrl: rec.avatarUrl ? (urlMap[rec.avatarUrl] || rec.avatarUrl) : rec.avatarUrl })
-      : null;
-    const safeList = list.map((p) =>
-      Object.assign({}, p, { avatarUrl: p.avatarUrl ? (urlMap[p.avatarUrl] || p.avatarUrl) : p.avatarUrl })
-    );
+    // 用副本回写，避免污染 profile 内部对象（storage 里仍是 cloud:// fileID）。
+    // 云头像解析失败 → 回退为空串（渲染层走 👤 占位），绝不留原始 cloud:// 直出 <image>。
+    const viewAvatar = (u) => (u && u.startsWith('cloud://')) ? (urlMap[u] || '') : u;
+    const safeRec = rec ? Object.assign({}, rec, { avatarUrl: viewAvatar(rec.avatarUrl) }) : null;
+    const safeList = list.map((p) => Object.assign({}, p, { avatarUrl: viewAvatar(p.avatarUrl) }));
     this.setData({
       recorder: safeRec,
       profiles: safeList,
@@ -102,8 +100,10 @@ Page({
   async _loadData(forceRefresh) {
     // 首页只加载最近 7 天（今日统计 + 预测都从中派生），避免每次进页面全量拉取拖慢首屏。
     const recent = await store.getRecords(forceRefresh, 7);
+    // 渲染前把 cloud:// 头像转成临时链接（失败→占位），避免原始 cloud:// 直出 <image> 触发 500
+    const resolved = await resolveRecordAvatars(recent);
     const todayKey = store.dateKey(Date.now());
-    const todayList = recent.filter((r) => store.dateKey(r.timestamp) === todayKey);
+    const todayList = resolved.filter((r) => store.dateKey(r.timestamp) === todayKey);
     const counts = { pee: 0, poop: 0, underwear: 0, diaper: 0 };
     todayList.forEach((r) => counts[r.type]++);
     const timeline = todayList
@@ -122,7 +122,7 @@ Page({
     const d = new Date();
     const todayLabel = `${d.getMonth() + 1}月${d.getDate()}日 ${WEEKDAYS[d.getDay()]}`;
 
-    const pred = predictNextPoop(recent);
+    const pred = predictNextPoop(resolved);
     const conf = confidenceConfig[pred.confidence] || confidenceConfig.low;
     const now = new Date();
     let windowState = 'default';

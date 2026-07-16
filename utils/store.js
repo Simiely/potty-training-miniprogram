@@ -47,7 +47,16 @@ function _storageSizeOk(list) {
 function loadHistoryFromStorage() {
   try {
     const c = wx.getStorageSync(HISTORY_KEY);
-    if (c && Array.isArray(c.data)) { _historyCache = c.data; return true; }
+    if (c && Array.isArray(c.data)) {
+      // 旧版本曾把临时链接(http)固化进历史缓存，临时链接会过期 → 头像 500。
+      // 云模式下若发现非 cloud:// 的 http 头像，视为旧格式丢弃，重新拉取并以
+      // 永久可重解的 cloud:// fileID 重新固化（一次性迁移，之后不再发生）。
+      if (cloudReady() && c.data.some((r) => r.recorder && r.recorder.avatarUrl && r.recorder.avatarUrl.startsWith('http'))) {
+        return false;
+      }
+      _historyCache = c.data;
+      return true;
+    }
   } catch (e) { /* ignore */ }
   return false;
 }
