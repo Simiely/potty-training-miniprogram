@@ -82,16 +82,6 @@
   .tab.active .label {
     color: #FF8A65;
   }
-  /* Dock 在深色背景下用浅色描边 + 更深阴影，避免与页面底色糊在一起 */
-  .tabbar.tablet {
-    background: rgba(34, 27, 22, 0.5);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    backdrop-filter: blur(20px) saturate(180%);
-    border-color: rgba(255, 255, 255, 0.16);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.22),
-                inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-  }
 }
 
 /* 平板 / 大屏：Dock 风格——3 个 icon 居中聚拢，浮在底部中央（类 macOS 程序坞） */
@@ -107,7 +97,7 @@
   padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
   bottom: calc(env(safe-area-inset-bottom) + 18px);
   /* 磨砂玻璃：半透明暖色底 + 背景模糊；高光描边用浅色边框 + 顶部 inset 高光，模拟 macOS Dock 反光 */
-  background: rgba(255, 248, 242, 0.55);
+  background: rgba(255, 248, 242, 0.4);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.6);
@@ -124,3 +114,19 @@
 .tabbar.tablet .icon { width: 28px; height: 28px; }
 .tabbar.tablet .pill { width: 58px; height: 58px; margin-left: -29px; top: 6px; border-radius: 16px; }
 .tabbar.tablet .label { font-size: 13px; }
+
+/* 深色模式：Dock 磨砂玻璃
+   注意：必须与浅色 .tabbar.tablet 同选择器、且写在它【后面】。
+   两者特异性相同，@media 不增加特异性，源顺序靠后者胜；若写在前面会被浅色覆盖，
+   导致深色模式下 Dock 仍显示浅色。透明度也调高，让磨砂更明显。 */
+@media (prefers-color-scheme: dark) {
+  .tabbar.tablet {
+    background: rgba(34, 27, 22, 0.42);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.25),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  }
+}
