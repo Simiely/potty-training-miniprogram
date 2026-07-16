@@ -8,6 +8,24 @@
 const { CLOUD } = require('../config');
 const { getDeviceId } = require('./device');
 
+// 云初始化必须只调用一次。微信云 SDK 重复调用 wx.cloud.init() 会触发内部
+// bug「Cannot read property 'stat' of undefined (sendInitRequest)」，表现为
+// 控制台红色 cloud init error。用模块级布尔锁保证幂等，任何调用方都走这里。
+let _cloudInitialized = false;
+function initCloud(env) {
+  if (_cloudInitialized) return true;
+  if (typeof wx === 'undefined' || !wx.cloud || !env) return false;
+  try {
+    wx.cloud.init({ env, traceUser: true });
+    _cloudInitialized = true;
+    return true;
+  } catch (e) {
+    console.warn('[cloud] init failed:', e);
+    _cloudInitialized = false;
+    return false;
+  }
+}
+
 // 当前用户的 openid：优先用内存缓存 / 持久化存储，否则用探针法检测。
 // 历史「多数票检测」会因多人记录混合而误判（把自己判成出现最多的他人），
 // 故已废弃，改用探针法（add 临时记录读 _openid 再 remove，零残留、100% 可靠）。
@@ -311,4 +329,5 @@ module.exports = {
   toTempUrlBatch,
   getCurrentOpenid,
   dateKey,
+  initCloud,
 };

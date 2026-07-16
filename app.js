@@ -1,4 +1,5 @@
 const { USE_CLOUD, CLOUD } = require('./config');
+const cloud = require('./utils/cloud');
 
 App({
   globalData: {
@@ -38,17 +39,11 @@ App({
     // 去掉 wx.cloud 的前置判断，因为某些场景下 onLaunch 时 wx.cloud 尚未注入，
     // 但后续 page onShow 时 wx.cloud 可能已可用。用 try-catch 兜底，失败时降级本地存储。
     if (USE_CLOUD && CLOUD.ENV) {
-      try {
-        wx.cloud.init({ env: CLOUD.ENV, traceUser: true });
-        // 仅在 init 真正成功时才标记「已就绪」，避免失败被误判为成功
-        this.globalData.cloudInitAttempted = true;
-        this.globalData.cloudInitFailed = false;
-      } catch (e) {
-        console.warn('[cloud] init failed at onLaunch, will retry on first use:', e);
-        // 失败时显式标记，profile.js 等模块据此重试而非误判就绪
-        this.globalData.cloudInitAttempted = false;
-        this.globalData.cloudInitFailed = true;
-      }
+      // initCloud 幂等（仅首次真正调用 wx.cloud.init），避免重复 init 触发
+      // 「Cannot read property 'stat' of undefined」内部报错。
+      const ok = cloud.initCloud(CLOUD.ENV);
+      this.globalData.cloudInitAttempted = ok;
+      this.globalData.cloudInitFailed = !ok;
     } else {
       this.globalData.cloudInitAttempted = false;
     }

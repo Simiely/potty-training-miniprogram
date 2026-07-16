@@ -82,11 +82,33 @@
   .tab.active .label {
     color: #FF8A65;
   }
+  /* Dock 在深色背景下用浅色描边 + 更深阴影，避免与页面底色糊在一起 */
+  .tabbar.tablet {
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
 }
 
-/* 平板 / 大屏：用 px 固定 Tab 栏自身尺寸，避免 rpx 在 iPad 上被放大 */
-.tabbar.tablet { padding-bottom: env(safe-area-inset-bottom); }
-.tabbar.tablet .tab { padding: 8px 0 10px; }
+/* 平板 / 大屏：Dock 风格——3 个 icon 居中聚拢，浮在底部中央（类 macOS 程序坞） */
+.tabbar.tablet {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
+  bottom: calc(env(safe-area-inset-bottom) + 18px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+.tabbar.tablet .tab {
+  flex: 0 0 auto;          /* 不拉伸，3 个 icon 并排聚拢居中 */
+  padding: 6px 14px 8px;
+}
 .tabbar.tablet .icon-wrap { width: 52px; height: 52px; }
 .tabbar.tablet .icon { width: 28px; height: 28px; }
 .tabbar.tablet .pill { width: 58px; height: 58px; margin-left: -29px; top: 6px; border-radius: 16px; }

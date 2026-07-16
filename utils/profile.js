@@ -7,6 +7,7 @@
 // fileID（cloud://...）；本地模式则保留 chooseAvatar 返回的临时路径（仅本机可见）。
 // ============================================================
 const { STORAGE_KEYS, CLOUD } = require('../config');
+const { initCloud } = require('./cloud');
 
 function genId() {
   return `u_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -30,28 +31,11 @@ function getCurrentProfile() {
 }
 
 // 保障云初始化已执行：app.js onLaunch 可能因 wx.cloud 尚未注入而跳过，
-// 本函数在首次真正需要云能力时补刀。调用方无需关心。
+// 本函数在首次真正需要云能力时补刀。initCloud 幂等，不会重复触发 SDK 初始化。
 function ensureCloudInit() {
   if (!CLOUD.ENV) return false;
-  const app = getApp();
-  // 只有「已尝试且未失败」才算就绪；若 app.js 里 init 失败(cloudInitFailed)则重试
-  if (app && app.globalData && app.globalData.cloudInitAttempted && !app.globalData.cloudInitFailed) {
-    return true;
-  }
   if (typeof wx === 'undefined' || !wx.cloud) return false;
-  try {
-    wx.cloud.init({ env: CLOUD.ENV, traceUser: true });
-    if (app && app.globalData) {
-      app.globalData.cloudInitAttempted = true;
-      app.globalData.cloudInitFailed = false;
-      app.globalData.cloudEnv = CLOUD.ENV;
-    }
-    return true;
-  } catch (e) {
-    console.warn('[cloud] init retry failed in profile.js:', e);
-    if (app && app.globalData) app.globalData.cloudInitFailed = true;
-    return false;
-  }
+  return initCloud(CLOUD.ENV);
 }
 
 // 上传头像：云模式上传到云存储返回 fileID（跨设备可见）；
