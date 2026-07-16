@@ -433,3 +433,27 @@ function dateKey(ts) {
 - 多文件改动后逐个 `node --check` + 重新编译验证。
 
 **涉及文件**：流程规范，无特定代码文件。
+
+---
+
+## 23. 云资源调用优化：持久化缓存 + 只刷当天（已落 working copy 并推 GitHub）
+
+**现象**：每次完全退出再打开小程序，三个页面 `onShow` 都重新全量分页拉云端 → 云数据库读取次数（及头像 `getTempFileURL` 云存储调用）随打开次数线性增长，接近「云函数调取次数过多」。
+
+**根因**：
+- `store.js` 的缓存 `_cache` 是**纯内存**对象，冷启动（进程重启）即清空；三个页面 `onShow` 各自触发 `getRecords()` 全量分页 → 每次打开都重新拉一次。
+- `cloud.js getRecords()` 内 `resolveAvatarUrls` 直接调 `getTempFileURL` 未走缓存 → 头像链接每次冷启动也重新请求云存储。
+- 官方文档佐证：`wx.setStorageSync` 本地存储**持久化**（重启仍在，单 key ≤1MB/总 ≤10MB）；云数据库建议给查询条件字段建索引。
+
+**修复（策略：每次打开刷新当天、其余用缓存）**：
+- `store.js` 缓存层升级为「内存 → 本地 Storage → 云端」三层：云端拉取后写 `potty_cache_<env>_all`（`{ts,data}`）；读取顺序 内存→Storage（命中即返回，零云调用）→云端。
+- `refreshTodayIfNeeded()`：每个打开仅增量查 `timestamp >= 今天0点`（`cloud.getRecordsToday`），merge 进全量缓存，历史记录全部命中缓存。同会话内 30s 冷却避免切 tab 狂刷。
+- 写操作：`add` 后只刷当天、`update/delete` 全量重拉（历史编辑/删除即时生效）、`clear` 置空并落盘；下拉刷新仍 `forceRefresh` 全量重拉。
+- `cloud.js` 头像解析统一走 `toTempUrlBatch`（已有 90min 内存缓存）并落 `potty_temp_urls` 到 Storage 跨冷启动复用；删除重复的直连 `resolveAvatarUrls`。
+- 容量守卫：序列化 >900KB 不持久化记录缓存，回退云端直读，避免 1MB/key 配额报错。
+
+**仍需手动处理（非代码）**：云开发控制台给 `potty_records` 集合的 `timestamp` 加**单字段索引（升序）**，让 `gte`+`orderBy` 命中索引，避免扫表慢查询。
+
+**经验**：小程序缓存别只用内存——内存冷启动即失，跨冷启动必须靠 `wx.setStorageSync`。增量「只刷当天」比整桶 TTL 更贴合「当天在记、历史不变」的场景，云读取从「每次打开全量」降到「每次打开仅当天」。
+
+**涉及文件**：`utils/store.js`、`utils/cloud.js`。

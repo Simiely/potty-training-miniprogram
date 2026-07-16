@@ -98,9 +98,9 @@ function dateKey(ts) {
   return `${y}-${m}-${day}`;
 }
 
-// 把 cloud://fileID 批量转为临时可下载链接，解决跨用户头像访问权限问题。
-// 云存储默认仅上传者可读，其他用户通过 fileID 无法直接显示。
-async function resolveAvatarUrls(list) {
+// 把 cloud://fileID 批量转为临时可下载链接，复用带缓存+持久化的 toTempUrlBatch，
+// 冷启动也能命中（不再每次打开都重新请求 getTempFileURL）。
+async function attachAvatars(list) {
   const fileIds = [];
   const positions = [];
   list.forEach((r, ri) => {
@@ -110,24 +110,11 @@ async function resolveAvatarUrls(list) {
     }
   });
   if (fileIds.length === 0) return;
-  // getTempFileURL 单次最多 50 个 fileID，超过必须分批（分页修复后能拉全量，
-  // 头像一旦 >50 会触发 -401002 错误并使头像全部清空）。
-  const CHUNK = 50;
-  try {
-    for (let i = 0; i < fileIds.length; i += CHUNK) {
-      const batch = fileIds.slice(i, i + CHUNK);
-      const batchPositions = positions.slice(i, i + CHUNK);
-      const res = await wx.cloud.getTempFileURL({ fileList: batch });
-      (res.fileList || []).forEach((f, j) => {
-        // 转换失败（无 tempFileURL）则清空，避免 raw cloud:// 路径导致 500
-        list[batchPositions[j]].recorder.avatarUrl = f.tempFileURL || '';
-      });
-    }
-  } catch (e) {
-    console.warn('[cloud] getTempFileURL failed:', e);
-    // 转换失败清空，避免 raw cloud:// 路径导致 500
-    positions.forEach((i) => { list[i].recorder.avatarUrl = ''; });
-  }
+  const map = await toTempUrlBatch(fileIds);
+  positions.forEach((i) => {
+    const url = map[list[i].recorder.avatarUrl];
+    if (url) list[i].recorder.avatarUrl = url;
+  });
 }
 
 // 把云端文档归一化为页面通用结构（用 id 统一代替 _id），
@@ -177,11 +164,43 @@ async function getRecords(days) {
       skip += PAGE_SIZE;
     }
     const list = normalize(all);
-    await resolveAvatarUrls(list);
+    await attachAvatars(list);
     return list;
   } catch (e) {
     // 不再静默返回空/部分数据,向上抛出清晰错误,让页面能提示用户
     console.error('[cloud] getRecords failed:', e);
+    const err = new Error('云端读取失败：' + (e.errMsg || e.message || '请检查网络或云环境'));
+    err.raw = e;
+    throw err;
+  }
+}
+
+// 仅取「当天」记录（增量刷新用）：查询 timestamp >= 今天0点，分页拉取，
+// 数据量极小（通常 1 页），每次打开只花这一次小查询即可让当天记录保持新鲜，
+// 历史记录由本地缓存兜底，避免全量分页重拉。头像同样走缓存出口。
+async function getRecordsToday(startISO) {
+  const PAGE_SIZE = 20;
+  const _ = db().command;
+  try {
+    const all = [];
+    let skip = 0;
+    while (true) {
+      const res = await coll()
+        .where({ timestamp: _.gte(startISO) })
+        .orderBy('timestamp', 'desc')
+        .skip(skip)
+        .limit(PAGE_SIZE)
+        .get();
+      const page = res.data || [];
+      all.push(...page);
+      if (page.length < PAGE_SIZE) break;
+      skip += PAGE_SIZE;
+    }
+    const list = normalize(all);
+    await attachAvatars(list);
+    return list;
+  } catch (e) {
+    console.error('[cloud] getRecordsToday failed:', e);
     const err = new Error('云端读取失败：' + (e.errMsg || e.message || '请检查网络或云环境'));
     err.raw = e;
     throw err;
@@ -250,9 +269,28 @@ async function getTodayRecords() {
 const _tempUrlCache = {};
 const TEMP_URL_TTL = 90 * 60 * 1000;
 
+// 头像临时链接跨冷启动持久化：内存缓存同时落本地 Storage，避免每次打开小程序
+// 都重新请求一次 getTempFileURL（云存储调用）。冷启动后首次使用从 Storage 预热。
+const TEMP_URL_STORAGE_KEY = 'potty_temp_urls';
+let _tempUrlLoaded = false;
+function loadTempUrlStorage() {
+  if (_tempUrlLoaded) return;
+  _tempUrlLoaded = true;
+  try {
+    const c = wx.getStorageSync(TEMP_URL_STORAGE_KEY);
+    if (c && c.ts && Date.now() - c.ts < TEMP_URL_TTL && c.map) {
+      Object.assign(_tempUrlCache, c.map);
+    }
+  } catch (e) { /* ignore */ }
+}
+function saveTempUrlStorage() {
+  try { wx.setStorageSync(TEMP_URL_STORAGE_KEY, { ts: Date.now(), map: _tempUrlCache }); } catch (e) { /* ignore */ }
+}
+
 // 批量把 cloud://fileID 转临时链接（一次请求转多个，替代 N+1 串行调用）。
 // 带内存缓存，命中则零网络请求。失败时该 fileID 不在返回 map 中。
 async function toTempUrlBatch(fileIds) {
+  loadTempUrlStorage();
   const ids = (fileIds || []).filter((f) => typeof f === 'string' && f.startsWith('cloud://'));
   const result = {};
   const now = Date.now();
@@ -278,6 +316,8 @@ async function toTempUrlBatch(fileIds) {
         }
       });
     }
+    // 有实际请求才落盘，避免无谓写 Storage
+    saveTempUrlStorage();
   } catch (e) {
     console.warn('[cloud] toTempUrlBatch failed:', e);
   }
@@ -319,6 +359,7 @@ async function getGroupedRecords() {
 
 module.exports = {
   getRecords,
+  getRecordsToday,
   addRecord,
   updateRecord,
   deleteRecord,
