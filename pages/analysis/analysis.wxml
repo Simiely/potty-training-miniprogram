@@ -1,56 +1,88 @@
-<view class="page">
+<view class="page {{uiMode}}">
   <view class="appbar" style="padding-top: {{navHeight}}px;">
-    <view class="appbar-title">📈 规律分析</view>
+    <view class="appbar-titles">
+      <view class="appbar-title">趋势分析</view>
+      <view class="appbar-sub">近 7 天 · 排便规律分析</view>
+    </view>
   </view>
 
-  <view class="card">
-    <!-- 排便间隔趋势 -->
-    <view class="section-label">📏 排便间隔趋势</view>
-    <view class="trend-box">
-      <view class="trend-desc">{{trendDesc}}</view>
-      <view wx:if="{{intervals.length > 0}}" class="trend-bars">
-        <view wx:for="{{intervals}}" wx:key="index" class="trend-col">
-          <text class="bv">{{item.h}}h</text>
-          <view class="bh" style="height:{{item.pct}}%"></view>
+  <view class="content">
+    <view class="kpi-row">
+      <view class="kpi-card">
+        <view class="kpi-val">{{kpiWeekTotal}}</view>
+        <view class="kpi-label">本周记录</view>
+      </view>
+      <view class="kpi-card">
+        <view class="kpi-val">{{kpiDailyAvg}}</view>
+        <view class="kpi-label">日均次数</view>
+      </view>
+      <view class="kpi-card">
+        <view class="kpi-val kpi-val--sm">{{kpiCommonTime}}</view>
+        <view class="kpi-label">最常见时段</view>
+      </view>
+    </view>
+
+    <view class="an-grid">
+      <!-- 左列：近7天事件分布（四类堆叠） -->
+      <view class="card an-col">
+        <view class="section-label">
+          📊 近7天事件分布
+          <text class="sec-sub">四类事件按日堆叠</text>
+        </view>
+        <view class="stack-chart">
+          <view wx:for="{{stackBars}}" wx:key="label" class="stack-col">
+            <view class="stack-bars">
+              <view wx:for="{{item.segments}}" wx:for-item="seg" wx:key="cls" class="stack-seg seg--{{seg.cls}}" style="height:{{seg.pct}}%"></view>
+            </view>
+            <text class="stack-wd">{{item.weekday}}</text>
+            <text class="stack-dt">{{item.label}}</text>
+          </view>
+        </view>
+        <view class="stack-legend">
+          <view class="leg"><view class="leg-dot leg--pee"></view>小便</view>
+          <view class="leg"><view class="leg-dot leg--poop"></view>大便</view>
+          <view class="leg"><view class="leg-dot leg--under"></view>小内裤</view>
+          <view class="leg"><view class="leg-dot leg--diaper"></view>尿不湿</view>
+        </view>
+      </view>
+
+      <!-- 右列：常见排便时段 -->
+      <view class="card an-col">
+        <view class="section-label">⏰ 常见排便时段</view>
+        <view wx:if="{{commonTimes.length > 0}}" class="chips">
+          <view wx:for="{{commonTimes}}" wx:key="index" class="chip {{item.hot ? 'hot' : ''}}">
+            <text wx:if="{{item.hot}}" class="chip-ico">🔥</text>
+            <text class="chip-time">{{item.time}}</text>
+            <text class="chip-count">{{item.count}} 次</text>
+          </view>
+        </view>
+        <view wx:else class="empty-center" style="padding:24rpx;">暂无足够的大便数据</view>
+      </view>
+    </view>
+
+    <!-- 底部：近7天明细 -->
+    <view class="card an-detail">
+      <view class="section-label">
+        📅 近7天排便次数
+        <text class="sec-sub">合计 {{weekTotal}} 次</text>
+      </view>
+      <view class="day-cards">
+        <view wx:for="{{dayCards}}" wx:key="label" class="day-card">
+          <view class="dc-head">
+            <text class="dc-date">{{item.label}} {{item.weekday}}</text>
+            <text class="dc-total">共 {{item.total}} 次</text>
+          </view>
+          <view class="dc-types">
+            <view wx:for="{{item.types}}" wx:for-item="t" wx:key="name" class="dc-item dc-item--{{t.cls}}">
+              <text class="dc-item-bg">{{t.icon}}</text>
+              <text class="dc-item-val">{{t.value}}</text>
+              <text class="dc-item-name">{{t.name}}</text>
+            </view>
+          </view>
         </view>
       </view>
     </view>
 
-    <!-- 常见排便时段 -->
-    <view class="section-label">⏰ 常见排便时段</view>
-    <view wx:if="{{commonTimes.length > 0}}" class="chips">
-      <view wx:for="{{commonTimes}}" wx:key="index" class="chip {{item.hot ? 'hot' : ''}}">{{item.label}}</view>
-    </view>
-    <view wx:else class="empty-center" style="padding:24rpx;">暂无足够的大便数据</view>
-
-    <!-- 近7天排便次数 -->
-    <view class="section-label">📅 近7天排便次数</view>
-    <view class="legend">
-      <view class="li"><view class="dot" style="background:#42A5F5"></view>小便</view>
-      <view class="li"><view class="dot" style="background:#FF7043"></view>大便</view>
-      <view class="li"><view class="dot" style="background:#66BB6A"></view>小内裤</view>
-      <view class="li"><view class="dot" style="background:#BA68C8"></view>尿不湿</view>
-    </view>
-
-    <view class="chart">
-      <view wx:for="{{chart.labels}}" wx:key="index" class="day">
-        <view class="bar" style="height:{{chart.bars[index].pee}}%;background:#42A5F5"></view>
-        <view class="bar" style="height:{{chart.bars[index].poop}}%;background:#FF7043"></view>
-        <view class="bar" style="height:{{chart.bars[index].underwear}}%;background:#66BB6A"></view>
-        <view class="bar" style="height:{{chart.bars[index].diaper}}%;background:#BA68C8"></view>
-        <text class="dl">{{item}}</text>
-      </view>
-    </view>
-
-    <view class="chart-data">
-      <view wx:for="{{chart.labels}}" wx:key="index" class="col">
-        {{chart.pee[index]}}💧
-        {{chart.poop[index]}}💩
-        {{chart.underwear[index]}}🩲
-        {{chart.diaper[index]}}👶
-      </view>
-    </view>
+    <view style="height:40rpx;"></view>
   </view>
-
-  <view style="height:40rpx;"></view>
 </view>

@@ -1,8 +1,9 @@
 const { TYPE_META } = require('../../config');
 const store = require('../../utils/store');
 const profile = require('../../utils/profile');
-const { toTempUrl } = require('../../utils/cloud');
+const { toTempUrlBatch } = require('../../utils/cloud');
 const { predictNextPoop } = require('../../utils/analysis');
+const { detectTablet } = require('../../utils/device');
 
 const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 const confidenceConfig = {
@@ -24,6 +25,8 @@ function fmtWindow(d) {
 Page({
   data: {
     navHeight: 64,
+    uiMode: 'phone',
+    navKey: 'record',
     stats: { pee: 0, poop: 0, underwear: 0, diaper: 0 },
     timeline: [],
     todayLabel: '',
@@ -44,8 +47,13 @@ Page({
     this.setData({
       navHeight: getApp().globalData.navHeight,
       isHarmony: getApp().globalData.isHarmony,
+      uiMode: detectTablet() ? 'tablet' : 'phone',
     });
     wx.setNavigationBarColor({ frontColor: '#ffffff', backgroundColor: '#FF8A65' });
+  },
+
+  onResize() {
+    this.setData({ uiMode: detectTablet() ? 'tablet' : 'phone' });
   },
 
   onShow() {
@@ -55,26 +63,44 @@ Page({
     this.refreshRecorder();
     this.loadData();
   },
-  onPullDownRefresh() { this.loadData().then(() => wx.stopPullDownRefresh()); },
+  onPullDownRefresh() { this.loadData(true).then(() => wx.stopPullDownRefresh()); },
 
   // 同步当前记录人 + 列表（切换 tab 回来或编辑后调用）
   async refreshRecorder() {
     const rec = profile.getCurrentRecorder();
     const list = profile.getProfiles();
-    // 把 cloud://fileID 转临时链接，跨用户也能显示头像
-    if (rec && rec.avatarUrl) rec.avatarUrl = await toTempUrl(rec.avatarUrl);
-    for (const p of list) {
-      if (p.avatarUrl) p.avatarUrl = await toTempUrl(p.avatarUrl);
-    }
+    // 收集需要转换的 cloud:// 头像，一次批量请求（替代逐个串行 getTempFileURL 的 N+1 调用）
+    const needConvert = [];
+    if (rec && rec.avatarUrl && rec.avatarUrl.startsWith('cloud://')) needConvert.push(rec.avatarUrl);
+    list.forEach((p) => {
+      if (p.avatarUrl && p.avatarUrl.startsWith('cloud://')) needConvert.push(p.avatarUrl);
+    });
+    const urlMap = await toTempUrlBatch(needConvert); // 带 90 分钟缓存，命中则零请求
+    // 用副本回写，避免污染 profile 内部对象（storage 里仍是 cloud:// fileID）
+    const safeRec = rec
+      ? Object.assign({}, rec, { avatarUrl: rec.avatarUrl ? (urlMap[rec.avatarUrl] || rec.avatarUrl) : rec.avatarUrl })
+      : null;
+    const safeList = list.map((p) =>
+      Object.assign({}, p, { avatarUrl: p.avatarUrl ? (urlMap[p.avatarUrl] || p.avatarUrl) : p.avatarUrl })
+    );
     this.setData({
-      recorder: rec,
-      profiles: list,
+      recorder: safeRec,
+      profiles: safeList,
       currentUserId: profile.getCurrentUserId(),
     });
   },
 
-  async loadData() {
-    const today = await store.getTodayRecords();
+  async loadData(forceRefresh = false) {
+    try {
+      await this._loadData(forceRefresh);
+    } catch (e) {
+      console.error('[record] loadData failed:', e);
+      wx.showToast({ title: e.message || '读取失败，请检查网络/云环境', icon: 'none' });
+    }
+  },
+
+  async _loadData(forceRefresh) {
+    const today = await store.getTodayRecords(forceRefresh);
     const counts = { pee: 0, poop: 0, underwear: 0, diaper: 0 };
     today.forEach((r) => counts[r.type]++);
     const timeline = today

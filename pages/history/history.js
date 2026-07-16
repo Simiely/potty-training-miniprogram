@@ -1,7 +1,8 @@
 const { TYPE_META } = require('../../config');
 const store = require('../../utils/store');
 const { dateKey } = require('../../utils/storage');
-const { getDeviceId } = require('../../utils/device');
+const { getDeviceId, detectTablet } = require('../../utils/device');
+const profile = require('../../utils/profile');
 
 const WEEKDAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
@@ -25,6 +26,9 @@ function parseTimestamp(ts) {
 Page({
   data: {
     navHeight: 64,
+    uiMode: 'phone',
+    navKey: 'history',
+    recorder: null,
     groups: [],
     expanded: {},
     // 编辑时间
@@ -38,33 +42,47 @@ Page({
     this.setData({
       navHeight: getApp().globalData.navHeight,
       isHarmony: getApp().globalData.isHarmony,
+      uiMode: detectTablet() ? 'tablet' : 'phone',
     });
     wx.setNavigationBarColor({ frontColor: '#ffffff', backgroundColor: '#FF8A65' });
+  },
+
+  onResize() {
+    this.setData({ uiMode: detectTablet() ? 'tablet' : 'phone' });
   },
 
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 2 });
     }
+    const rec = profile.getCurrentRecorder();
+    this.setData({ recorder: rec || null });
     this.load();
   },
-  onPullDownRefresh() { this.load().then(() => wx.stopPullDownRefresh()); },
+  onPullDownRefresh() { this.load(true).then(() => wx.stopPullDownRefresh()); },
 
-  async load() {
+  async load(forceRefresh = false) {
+    try {
+      await this._load(forceRefresh);
+    } catch (e) {
+      console.error('[history] load failed:', e);
+      wx.showToast({ title: e.message || '读取失败，请检查网络/云环境', icon: 'none' });
+    }
+  },
+
+  async _load(forceRefresh) {
     const todayStr = dateKey(Date.now());
-    const grouped = await store.getGroupedRecords();
+    const grouped = await store.getGroupedRecords(forceRefresh);
     const currentDeviceId = getDeviceId();
     const currentOpenid = await store.getCurrentOpenid();
     const isCloud = store.cloudReady();
     const groups = grouped.map((g) => {
       const d = new Date(g.date);
       const records = g.records.map((r) => {
-        // 云模式：优先按微信账号 _openid 判断（需云函数已部署）；
-        // 云函数未部署时降级为 deviceId，确保至少有按钮可用。
+        // 云模式：严格按微信账号 _openid 精确判定（探针法获取，无需云函数）。
+        // currentOpenid 为空（极端无网）时保守处理：不显示删除按钮，避免跨设备误显/误删。
         const canDel = isCloud
-          ? (currentOpenid
-              ? (r.creatorOpenid && currentOpenid === r.creatorOpenid)
-              : (currentDeviceId === r.deviceId))   // 云函数未部署时的降级
+          ? !!(currentOpenid && r.creatorOpenid && currentOpenid === r.creatorOpenid)
           : (currentDeviceId === r.deviceId);
         return {
           id: r.id,
@@ -90,7 +108,10 @@ Page({
         records,
       };
     });
-    this.setData({ groups });
+    const totalCount = groups.reduce((s, g) => s + g.records.length, 0);
+    const todayGroup = groups.find((g) => g.isToday);
+    const todayCount = todayGroup ? todayGroup.records.length : 0;
+    this.setData({ groups, totalCount, todayCount });
   },
 
   toggleDate(e) {
@@ -177,9 +198,13 @@ Page({
       content: '此操作不可恢复！确认删除你的全部记录？',
       success: async (r) => {
         if (r.confirm) {
-          await store.clearAllRecords();
-          this.load();
-          wx.showToast({ title: '已清空我的记录', icon: 'none' });
+          try {
+            await store.clearAllRecords();
+            this.load();
+            wx.showToast({ title: '已清空我的记录', icon: 'none' });
+          } catch (e) {
+            wx.showToast({ title: e.message || '清空失败，请重试', icon: 'none' });
+          }
         }
       },
     });

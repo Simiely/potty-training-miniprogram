@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>画板 · iPad Pro 12.9″ 历史记录页</title>
+<style>
+  :root{
+    --brand:#FF8A65; --brand-d:#FB6F43; --brand-l:#FFB187;
+    --cream:#FFF6EF; --panel:#FFFFFF; --ink:#3E2723; --ink-2:#7A6A63; --ink-3:#A8978E;
+    --line:#F0E2D8;
+    --pee:#29B6F6; --pee-bg:#E6F6FE;
+    --poop:#8D6E63; --poop-bg:#F3ECE8;
+    --under:#66BB6A; --under-bg:#E9F6EA;
+    --diaper:#9575CD; --diaper-bg:#F1ECFA;
+    --radius:22px; --radius-s:14px;
+    --shadow:0 10px 30px rgba(120,80,60,.10); --shadow-s:0 4px 14px rgba(120,80,60,.08);
+    --nav-w:268px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:radial-gradient(120% 120% at 50% 0%, #FFE9DC 0%, #FBE3D6 45%, #F3D7C6 100%);
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:40px 20px 60px; color:var(--ink);}
+  .caption{font-size:14px; color:#8a6f63; letter-spacing:.5px; margin-bottom:18px; font-weight:600;}
+  .caption b{color:var(--brand-d);}
+  .device{width:1366px; height:1024px; background:#1b1b1d; border-radius:46px; padding:22px;
+    box-shadow:0 40px 90px rgba(80,40,20,.35), inset 0 0 0 2px #2c2c2e; position:relative;}
+  .device::before{content:""; position:absolute; top:11px; left:50%; transform:translateX(-50%);
+    width:8px; height:8px; border-radius:50%; background:#0a0a0a; box-shadow:0 0 0 2px #2c2c2e;}
+  .screen{width:100%; height:100%; background:var(--cream); border-radius:28px; display:flex; overflow:hidden;}
+  .sidebar{width:var(--nav-w); flex:0 0 var(--nav-w); background:#FFFDFB; border-right:1px solid var(--line);
+    padding:26px 18px; display:flex; flex-direction:column;}
+  .brand{display:flex; align-items:center; gap:12px; padding:6px 10px 22px;}
+  .brand .logo{width:46px; height:46px; border-radius:14px; background:linear-gradient(135deg,var(--brand),var(--brand-d));
+    display:flex; align-items:center; justify-content:center; font-size:24px; box-shadow:var(--shadow-s);}
+  .brand .name{font-size:17px; font-weight:800; line-height:1.2;}
+  .brand .name small{display:block; font-size:11px; font-weight:600; color:var(--ink-3); letter-spacing:.5px;}
+  .nav{display:flex; flex-direction:column; gap:6px; margin-top:6px;}
+  .nav-item{display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:14px;
+    font-size:16px; font-weight:600; color:var(--ink-2); cursor:pointer; transition:.15s; position:relative;}
+  .nav-item .ic{font-size:20px; width:24px; text-align:center;}
+  .nav-item:hover{background:#FBEDE4; color:var(--ink);}
+  .nav-item.active{background:linear-gradient(135deg,#FFE6D8,#FFEFE6); color:var(--brand-d);}
+  .nav-item.active::before{content:""; position:absolute; left:0; top:50%; transform:translateY(-50%);
+    width:4px; height:24px; border-radius:4px; background:var(--brand);}
+  .side-foot{margin-top:auto; display:flex; align-items:center; gap:12px; padding:14px 12px; border-top:1px solid var(--line);}
+  .side-foot .ava{width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,#FFD0B8,#FFB187);
+    display:flex; align-items:center; justify-content:center; font-size:22px;}
+  .side-foot .who b{font-size:14px;} .side-foot .who small{display:block; font-size:12px; color:var(--ink-3);}
+  .main{flex:1; padding:30px 36px 36px; overflow:hidden; display:flex; flex-direction:column;}
+  .topbar{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:20px;}
+  .topbar h1{font-size:30px; font-weight:800; letter-spacing:.5px;}
+  .topbar .sub{font-size:14px; color:var(--ink-3); margin-top:6px;}
+  .topbar .act{display:flex; gap:10px;}
+  .topbar .pill{font-size:14px; font-weight:700; padding:10px 18px; border-radius:999px; background:#fff;
+    box-shadow:var(--shadow-s); cursor:pointer; color:var(--ink-2);}
+  .topbar .pill.danger{color:var(--brand-d);}
+  .scroll{flex:1; overflow:hidden; display:flex; flex-direction:column; gap:18px;}
+
+  .kpi{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  .k-card{background:var(--panel); border-radius:var(--radius); padding:20px 24px; box-shadow:var(--shadow); border:1px solid #fff;}
+  .k-card .k-lbl{font-size:13px; color:var(--ink-2); font-weight:600;}
+  .k-card .k-num{font-size:36px; font-weight:800; margin-top:6px; line-height:1;}
+  .k-card .k-unit{font-size:15px; color:var(--ink-3); font-weight:600; margin-left:4px;}
+
+  .hist-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px; flex:1; min-height:0; overflow:hidden;}
+  .hcard{background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid #fff;
+    padding:20px 22px; display:flex; flex-direction:column; min-height:0;}
+  .hcard .h-head{display:flex; align-items:center; gap:10px; padding-bottom:14px; border-bottom:1px solid var(--line);}
+  .hcard .h-date{font-size:17px; font-weight:800;}
+  .hcard .h-week{font-size:13px; color:var(--ink-3); font-weight:600;}
+  .hcard .today{font-size:11px; font-weight:700; color:#fff; background:var(--brand); padding:3px 10px; border-radius:999px; margin-left:auto;}
+  .hcard .h-counts{display:flex; gap:8px; margin:14px 0;}
+  .hcard .hc{font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px;}
+  .hc.pee{background:var(--pee-bg); color:var(--pee);} .hc.poop{background:var(--poop-bg); color:var(--poop);}
+  .hc.under{background:var(--under-bg); color:var(--under);} .hc.diaper{background:var(--diaper-bg); color:var(--diaper);}
+  .h-rows{flex:1; overflow:hidden; display:flex; flex-direction:column;}
+  .h-row{display:flex; align-items:center; gap:12px; padding:11px 6px; border-bottom:1px dashed var(--line);}
+  .h-row:last-child{border-bottom:none;}
+  .h-time{font-size:15px; font-weight:700; width:54px; color:var(--ink);}
+  .h-badge{font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px;}
+  .b-pee{background:var(--pee-bg); color:var(--pee);} .b-poop{background:var(--poop-bg); color:var(--poop);}
+  .b-under{background:var(--under-bg); color:var(--under);} .b-diaper{background:var(--diaper-bg); color:var(--diaper);}
+  .h-note{font-size:13px; color:var(--ink-3); margin-left:auto;}
+  .h-ops{display:flex; gap:6px; margin-left:6px;}
+  .h-ops span{width:30px; height:30px; border-radius:9px; background:var(--cream); display:flex; align-items:center;
+    justify-content:center; font-size:14px; cursor:pointer; color:var(--ink-2);}
+  .h-ops .del{color:var(--brand-d);}
+</style>
+</head>
+<body>
+  <div class="caption">画板预览 · <b>iPad Pro 12.9″</b> 横屏 2732×2048 · 网页 App 模式 · 当前页：历史记录</div>
+  <div class="device">
+    <div class="screen">
+      <aside class="sidebar">
+        <div class="brand"><div class="logo">👶</div><div class="name">如厕训练<small>POTTY TRAINER</small></div></div>
+        <nav class="nav">
+          <div class="nav-item"><span class="ic">📝</span>记录</div>
+          <div class="nav-item"><span class="ic">📊</span>分析</div>
+          <div class="nav-item active"><span class="ic">📜</span>历史</div>
+        </nav>
+        <div class="side-foot"><div class="ava">👩</div><div class="who"><small>当前记录人</small><b>妈妈</b></div></div>
+      </aside>
+      <main class="main">
+        <div class="topbar">
+          <div><h1>历史记录</h1><div class="sub">全部记录 · 按日期分组 · 点击可编辑或删除</div></div>
+          <div class="act"><div class="pill danger">🗑 清空我的</div></div>
+        </div>
+        <div class="scroll">
+          <section class="kpi">
+            <div class="k-card"><div class="k-lbl">总记录</div><div class="k-num">248<span class="k-unit">条</span></div></div>
+            <div class="k-card"><div class="k-lbl">记录天数</div><div class="k-num">36<span class="k-unit">天</span></div></div>
+            <div class="k-card"><div class="k-lbl">今日记录</div><div class="k-num">6<span class="k-unit">条</span></div></div>
+          </section>
+          <section class="hist-grid">
+            <div class="hcard">
+              <div class="h-head"><span class="h-date">7月16日</span><span class="h-week">星期四</span><span class="today">今天</span></div>
+              <div class="h-counts"><span class="hc pee">小便 5</span><span class="hc poop">大便 2</span><span class="hc under">内裤 4</span><span class="hc diaper">尿裤 0</span></div>
+              <div class="h-rows">
+                <div class="h-row"><span class="h-time">07:42</span><span class="h-badge b-pee">小便</span><span class="h-note">妈妈</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">09:15</span><span class="h-badge b-under">小内裤</span><span class="h-note">主动告知</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">11:03</span><span class="h-badge b-poop">大便</span><span class="h-note">爸爸</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">13:20</span><span class="h-badge b-pee">小便</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">15:48</span><span class="h-badge b-diaper">尿不湿</span><span class="h-note">午睡意外</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">17:30</span><span class="h-badge b-pee">小便</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+              </div>
+            </div>
+            <div class="hcard">
+              <div class="h-head"><span class="h-date">7月15日</span><span class="h-week">星期三</span></div>
+              <div class="h-counts"><span class="hc pee">小便 4</span><span class="hc poop">大便 1</span><span class="hc under">内裤 3</span><span class="hc diaper">尿裤 1</span></div>
+              <div class="h-rows">
+                <div class="h-row"><span class="h-time">08:10</span><span class="h-badge b-pee">小便</span><span class="h-note">妈妈</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">10:30</span><span class="h-badge b-under">小内裤</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">14:05</span><span class="h-badge b-poop">大便</span><span class="h-note">奶奶</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">16:40</span><span class="h-badge b-diaper">尿不湿</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+              </div>
+            </div>
+            <div class="hcard">
+              <div class="h-head"><span class="h-date">7月14日</span><span class="h-week">星期二</span></div>
+              <div class="h-counts"><span class="hc pee">小便 6</span><span class="hc poop">大便 2</span><span class="hc under">内裤 2</span><span class="hc diaper">尿裤 0</span></div>
+              <div class="h-rows">
+                <div class="h-row"><span class="h-time">07:50</span><span class="h-badge b-pee">小便</span><span class="h-note">爸爸</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">09:40</span><span class="h-badge b-under">小内裤</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">12:20</span><span class="h-badge b-poop">大便</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">15:10</span><span class="h-badge b-pee">小便</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">18:30</span><span class="h-badge b-pee">小便</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+              </div>
+            </div>
+            <div class="hcard">
+              <div class="h-head"><span class="h-date">7月13日</span><span class="h-week">星期一</span></div>
+              <div class="h-counts"><span class="hc pee">小便 4</span><span class="hc poop">大便 3</span><span class="hc under">内裤 5</span><span class="hc diaper">尿裤 0</span></div>
+              <div class="h-rows">
+                <div class="h-row"><span class="h-time">08:00</span><span class="h-badge b-pee">小便</span><span class="h-note">妈妈</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">10:15</span><span class="h-badge b-poop">大便</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">11:45</span><span class="h-badge b-under">小内裤</span><span class="h-note">幼儿园</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">16:00</span><span class="h-badge b-under">小内裤</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+              </div>
+            </div>
+            <div class="hcard">
+              <div class="h-head"><span class="h-date">7月12日</span><span class="h-week">星期日</span></div>
+              <div class="h-counts"><span class="hc pee">小便 5</span><span class="hc poop">大便 1</span><span class="hc under">内裤 4</span><span class="hc diaper">尿裤 0</span></div>
+              <div class="h-rows">
+                <div class="h-row"><span class="h-time">07:30</span><span class="h-badge b-pee">小便</span><span class="h-note">爸爸</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">09:20</span><span class="h-badge b-under">小内裤</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">13:40</span><span class="h-badge b-pee">小便</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">17:15</span><span class="h-badge b-under">小内裤</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+              </div>
+            </div>
+            <div class="hcard">
+              <div class="h-head"><span class="h-date">7月11日</span><span class="h-week">星期六</span></div>
+              <div class="h-counts"><span class="hc pee">小便 4</span><span class="hc poop">大便 2</span><span class="hc under">内裤 3</span><span class="hc diaper">尿裤 1</span></div>
+              <div class="h-rows">
+                <div class="h-row"><span class="h-time">08:25</span><span class="h-badge b-pee">小便</span><span class="h-note">妈妈</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">11:00</span><span class="h-badge b-poop">大便</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">14:50</span><span class="h-badge b-under">小内裤</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+                <div class="h-row"><span class="h-time">19:10</span><span class="h-badge b-diaper">尿不湿</span><span class="h-ops"><span>✏️</span><span class="del">🗑</span></span></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

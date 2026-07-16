@@ -3,34 +3,65 @@
 // 集合 potty_records 文档结构：
 //   { _id, _openid, type, timestamp(ISO), deviceId, recorder:{nickname, avatarUrl} }
 // _openid 由微信云开发自动注入，标识记录创建者的微信账号。
-// 当前用户的 _openid 在首次 getRecords 时自动检测并缓存，用于 canDelete 判断。
+// 当前用户的 _openid 通过「探针法」精确获取（新增一条临时记录→读其 _openid→立即删除），并持久化，用于 canDelete 判断。
 // ============================================================
 const { CLOUD } = require('../config');
 const { getDeviceId } = require('./device');
 
-// 当前用户的 openid（首次调用时从已有记录自动检测，创建新记录时也会缓存）
+// 当前用户的 openid：优先用内存缓存 / 持久化存储，否则用探针法检测。
+// 历史「多数票检测」会因多人记录混合而误判（把自己判成出现最多的他人），
+// 故已废弃，改用探针法（add 临时记录读 _openid 再 remove，零残留、100% 可靠）。
+const MY_OPENID_KEY = 'my_openid';
 let _currentOpenid = '';
 
 async function getCurrentOpenid() {
   if (_currentOpenid) return _currentOpenid;
-  // 无需云函数：从现有记录中检测。取最近 10 条中 _openid 出现次数最多的作为当前用户。
+
+  // 1) 内存无 → 读持久化存储（之前会话/新增记录时已写入，覆盖同账号跨设备场景）
   try {
-    const res = await coll().orderBy('timestamp', 'desc').limit(10).get();
-    const counters = {};
-    (res.data || []).forEach((r) => {
-      if (r._openid) counters[r._openid] = (counters[r._openid] || 0) + 1;
-    });
-    const ids = Object.keys(counters);
-    if (ids.length > 0) {
-      ids.sort((a, b) => counters[b] - counters[a]);
-      _currentOpenid = ids[0];
-      console.log('[cloud] current openid detected ✓');
+    const saved = wx.getStorageSync(MY_OPENID_KEY);
+    if (saved) {
+      _currentOpenid = saved;
+      console.log('[cloud] openid restored from storage ✓');
+      return _currentOpenid;
+    }
+  } catch (e) { /* ignore */ }
+
+  // 2) 仍无 → 探针法精确识别当前微信账号（无需部署云函数，零残留）
+  try {
+    const oid = await detectOpenidByProbe();
+    if (oid) {
+      _currentOpenid = oid;
+      try { wx.setStorageSync(MY_OPENID_KEY, oid); } catch (e) { /* ignore */ }
+      console.log('[cloud] openid detected via probe ✓');
       return _currentOpenid;
     }
   } catch (e) {
-    console.warn('[cloud] openid detection failed:', e.message);
+    console.warn('[cloud] probe detect failed:', e.message);
   }
+
   return '';
+}
+
+// 探针法：新增一条临时记录 → 读取其自动注入的 _openid（必为当前账号）→ 立即删除。
+// 规避「多数票检测」在多人数据混合时把自己误判成他人的问题。
+async function detectOpenidByProbe() {
+  // 清理历史探针残留（上次 remove 若因网络失败会留下 _probe 记录，避免累积）
+  try {
+    const _ = db().command;
+    const stale = await coll().where({ _probe: _.exists(true) }).limit(100).get();
+    await Promise.all((stale.data || []).map((d) => coll().doc(d._id).remove().catch(() => {})));
+  } catch (e) { /* 忽略，不影响本次探测 */ }
+
+  const tmp = await coll().add({
+    data: { _probe: true, timestamp: new Date().toISOString(), deviceId: getDeviceId() },
+  });
+  try {
+    const doc = await coll().doc(tmp._id).get();
+    return doc.data && doc.data._openid ? doc.data._openid : '';
+  } finally {
+    try { await coll().doc(tmp._id).remove(); } catch (e) { /* 残留会被 normalize 过滤 */ }
+  }
 }
 
 function db() {
@@ -61,16 +92,19 @@ async function resolveAvatarUrls(list) {
     }
   });
   if (fileIds.length === 0) return;
+  // getTempFileURL 单次最多 50 个 fileID，超过必须分批（分页修复后能拉全量，
+  // 头像一旦 >50 会触发 -401002 错误并使头像全部清空）。
+  const CHUNK = 50;
   try {
-    const res = await wx.cloud.getTempFileURL({ fileList: fileIds });
-    res.fileList.forEach((f, i) => {
-      if (f.tempFileURL) {
-        list[positions[i]].recorder.avatarUrl = f.tempFileURL;
-      } else {
-        // 转换失败清空，避免 raw cloud:// 路径导致 500
-        list[positions[i]].recorder.avatarUrl = '';
-      }
-    });
+    for (let i = 0; i < fileIds.length; i += CHUNK) {
+      const batch = fileIds.slice(i, i + CHUNK);
+      const batchPositions = positions.slice(i, i + CHUNK);
+      const res = await wx.cloud.getTempFileURL({ fileList: batch });
+      (res.fileList || []).forEach((f, j) => {
+        // 转换失败（无 tempFileURL）则清空，避免 raw cloud:// 路径导致 500
+        list[batchPositions[j]].recorder.avatarUrl = f.tempFileURL || '';
+      });
+    }
   } catch (e) {
     console.warn('[cloud] getTempFileURL failed:', e);
     // 转换失败清空，避免 raw cloud:// 路径导致 500
@@ -81,21 +115,54 @@ async function resolveAvatarUrls(list) {
 // 把云端文档归一化为页面通用结构（用 id 统一代替 _id），
 // 同时透传 _openid 为 creatorOpenid 供账号级归属判断。
 function normalize(list) {
-  return list.map((r) => ({
-    id: r._id,
-    type: r.type,
-    timestamp: r.timestamp,
-    deviceId: r.deviceId || '',
-    creatorOpenid: r._openid || '',
-    recorder: r.recorder || null,
-  }));
+  return list
+    .filter((r) => !r._probe) // 排除探针残留，避免泄漏到 UI
+    .map((r) => ({
+      id: r._id,
+      type: r.type,
+      timestamp: r.timestamp,
+      deviceId: r.deviceId || '',
+      creatorOpenid: r._openid || '',
+      recorder: r.recorder || null,
+    }));
 }
 
+// 小程序端 collection.get() 硬性上限 20 条/次,必须分页循环取全量。
+// 采用顺序分页(对标已发布体验版,实测读取快且稳):逐页 await,直到某页
+// 记录数 < 20(末页)即停止。不依赖 count(),规避部分基础库 count() 不应用
+// where 过滤而误返回 0、导致「静默空数据、无报错」的坑。
+// 分页游标用 skip(偏移量):相比 timestamp 游标(lt)不会在「同一毫秒多条记录
+// 正好落在页边界」时漏掉与末条同时间戳的其余记录。数据量 <1000 时 skip 开销
+// 可忽略;若以后量很大再迁移到云函数端(服务端无 20 条限制)。
+// where({timestamp: exists(true)}) 是恒真条件,仅用于规避空查询「扫全表」告警。
 async function getRecords() {
-  const res = await coll().orderBy('timestamp', 'desc').limit(1000).get();
-  const list = normalize(res.data || []);
-  await resolveAvatarUrls(list);
-  return list;
+  const PAGE_SIZE = 20;
+  const _ = db().command; // 注意: db 是函数,必须用 db().command
+  try {
+    const all = [];
+    let skip = 0;
+    while (true) {
+      const res = await coll()
+        .where({ timestamp: _.exists(true) })
+        .orderBy('timestamp', 'desc')
+        .skip(skip)
+        .limit(PAGE_SIZE)
+        .get();
+      const page = res.data || [];
+      all.push(...page);
+      if (page.length < PAGE_SIZE) break; // 最后一页,已取完
+      skip += PAGE_SIZE;
+    }
+    const list = normalize(all);
+    await resolveAvatarUrls(list);
+    return list;
+  } catch (e) {
+    // 不再静默返回空/部分数据,向上抛出清晰错误,让页面能提示用户
+    console.error('[cloud] getRecords failed:', e);
+    const err = new Error('云端读取失败：' + (e.errMsg || e.message || '请检查网络或云环境'));
+    err.raw = e;
+    throw err;
+  }
 }
 
 async function addRecord(type, recorder) {
@@ -112,9 +179,10 @@ async function addRecord(type, recorder) {
       const doc = await coll().doc(res._id).get();
       if (doc.data && doc.data._openid) {
         _currentOpenid = doc.data._openid;
+        try { wx.setStorageSync(MY_OPENID_KEY, _currentOpenid); } catch (e) { /* ignore */ }
         console.log('[cloud] openid cached from new record ✓');
       }
-    } catch (e) { /* 忽略，下次加载时 majority vote 兜底 */ }
+    } catch (e) { /* 忽略，下次加载时探针法兜底 */ }
   }
   return { id: res._id, ...data };
 }
@@ -130,9 +198,14 @@ async function updateRecord(id, updates) {
 // 云数据库无「按条件批量删」客户端 API，逐条删（受集合权限约束，仅能删自己创建的）。
 async function clearAllRecords() {
   const list = await getRecords();
+  let failed = 0;
   await Promise.all(
-    list.map((r) => coll().doc(r.id).remove().catch(() => {}))
+    list.map((r) => coll().doc(r.id).remove().catch(() => { failed += 1; }))
   );
+  // 不再静默吞错：有失败就抛出，让页面提示用户，避免误报「已清空成功」
+  if (failed > 0) {
+    throw new Error(`有 ${failed} 条记录删除失败，请检查网络后重试`);
+  }
 }
 
 async function getTodayRecords() {
@@ -141,16 +214,51 @@ async function getTodayRecords() {
   return all.filter((r) => dateKey(r.timestamp) === today);
 }
 
-// 单个 cloud://fileID 转临时链接，供外部模块调用。
+// 临时链接（tempFileURL）缓存：微信默认约 2 小时有效，缓存 90 分钟，
+// 避免每次切回页面都重新请求 getTempFileURL（这是读取慢的另一主因）。
+const _tempUrlCache = {};
+const TEMP_URL_TTL = 90 * 60 * 1000;
+
+// 批量把 cloud://fileID 转临时链接（一次请求转多个，替代 N+1 串行调用）。
+// 带内存缓存，命中则零网络请求。失败时该 fileID 不在返回 map 中。
+async function toTempUrlBatch(fileIds) {
+  const ids = (fileIds || []).filter((f) => typeof f === 'string' && f.startsWith('cloud://'));
+  const result = {};
+  const now = Date.now();
+  const miss = [];
+  ids.forEach((id) => {
+    const c = _tempUrlCache[id];
+    if (c && now - c.t < TEMP_URL_TTL) {
+      result[id] = c.url;
+    } else {
+      miss.push(id);
+    }
+  });
+  if (miss.length === 0) return result;
+  const CHUNK = 50;
+  try {
+    for (let i = 0; i < miss.length; i += CHUNK) {
+      const batch = miss.slice(i, i + CHUNK);
+      const res = await wx.cloud.getTempFileURL({ fileList: batch });
+      (res.fileList || []).forEach((f) => {
+        if (f.tempFileURL) {
+          _tempUrlCache[f.fileID] = { url: f.tempFileURL, t: now };
+          result[f.fileID] = f.tempFileURL;
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('[cloud] toTempUrlBatch failed:', e);
+  }
+  return result;
+}
+
+// 单个 cloud://fileID 转临时链接，供外部模块调用（复用批量+缓存）。
 // 失败时返回空字符串，避免 raw cloud:// 导致 500 错误。
 async function toTempUrl(fileID) {
   if (!fileID || !fileID.startsWith('cloud://')) return fileID;
-  try {
-    const res = await wx.cloud.getTempFileURL({ fileList: [fileID] });
-    return res.fileList[0] && res.fileList[0].tempFileURL ? res.fileList[0].tempFileURL : '';
-  } catch (e) {
-    return '';
-  }
+  const map = await toTempUrlBatch([fileID]);
+  return map[fileID] || '';
 }
 
 async function getGroupedRecords() {
@@ -187,6 +295,7 @@ module.exports = {
   getTodayRecords,
   getGroupedRecords,
   toTempUrl,
+  toTempUrlBatch,
   getCurrentOpenid,
   dateKey,
 };

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>画板 · iPad Pro 12.9″ 分析页</title>
+<style>
+  :root{
+    --brand:#FF8A65; --brand-d:#FB6F43; --brand-l:#FFB187;
+    --cream:#FFF6EF; --panel:#FFFFFF; --ink:#3E2723; --ink-2:#7A6A63; --ink-3:#A8978E;
+    --line:#F0E2D8;
+    --pee:#29B6F6; --pee-bg:#E6F6FE;
+    --poop:#8D6E63; --poop-bg:#F3ECE8;
+    --under:#66BB6A; --under-bg:#E9F6EA;
+    --diaper:#9575CD; --diaper-bg:#F1ECFA;
+    --radius:22px; --radius-s:14px;
+    --shadow:0 10px 30px rgba(120,80,60,.10); --shadow-s:0 4px 14px rgba(120,80,60,.08);
+    --nav-w:268px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:radial-gradient(120% 120% at 50% 0%, #FFE9DC 0%, #FBE3D6 45%, #F3D7C6 100%);
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:40px 20px 60px; color:var(--ink);}
+  .caption{font-size:14px; color:#8a6f63; letter-spacing:.5px; margin-bottom:18px; font-weight:600;}
+  .caption b{color:var(--brand-d);}
+  .device{width:1366px; height:1024px; background:#1b1b1d; border-radius:46px; padding:22px;
+    box-shadow:0 40px 90px rgba(80,40,20,.35), inset 0 0 0 2px #2c2c2e; position:relative;}
+  .device::before{content:""; position:absolute; top:11px; left:50%; transform:translateX(-50%);
+    width:8px; height:8px; border-radius:50%; background:#0a0a0a; box-shadow:0 0 0 2px #2c2c2e;}
+  .screen{width:100%; height:100%; background:var(--cream); border-radius:28px; display:flex; overflow:hidden;}
+  .sidebar{width:var(--nav-w); flex:0 0 var(--nav-w); background:#FFFDFB; border-right:1px solid var(--line);
+    padding:26px 18px; display:flex; flex-direction:column;}
+  .brand{display:flex; align-items:center; gap:12px; padding:6px 10px 22px;}
+  .brand .logo{width:46px; height:46px; border-radius:14px; background:linear-gradient(135deg,var(--brand),var(--brand-d));
+    display:flex; align-items:center; justify-content:center; font-size:24px; box-shadow:var(--shadow-s);}
+  .brand .name{font-size:17px; font-weight:800; line-height:1.2;}
+  .brand .name small{display:block; font-size:11px; font-weight:600; color:var(--ink-3); letter-spacing:.5px;}
+  .nav{display:flex; flex-direction:column; gap:6px; margin-top:6px;}
+  .nav-item{display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:14px;
+    font-size:16px; font-weight:600; color:var(--ink-2); cursor:pointer; transition:.15s; position:relative;}
+  .nav-item .ic{font-size:20px; width:24px; text-align:center;}
+  .nav-item:hover{background:#FBEDE4; color:var(--ink);}
+  .nav-item.active{background:linear-gradient(135deg,#FFE6D8,#FFEFE6); color:var(--brand-d);}
+  .nav-item.active::before{content:""; position:absolute; left:0; top:50%; transform:translateY(-50%);
+    width:4px; height:24px; border-radius:4px; background:var(--brand);}
+  .side-foot{margin-top:auto; display:flex; align-items:center; gap:12px; padding:14px 12px; border-top:1px solid var(--line);}
+  .side-foot .ava{width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,#FFD0B8,#FFB187);
+    display:flex; align-items:center; justify-content:center; font-size:22px;}
+  .side-foot .who b{font-size:14px;} .side-foot .who small{display:block; font-size:12px; color:var(--ink-3);}
+  .main{flex:1; padding:30px 36px 36px; overflow:hidden; display:flex; flex-direction:column;}
+  .topbar{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px;}
+  .topbar h1{font-size:30px; font-weight:800; letter-spacing:.5px;}
+  .topbar .sub{font-size:14px; color:var(--ink-3); margin-top:6px;}
+  .topbar .avatar{width:46px; height:46px; border-radius:50%; background:#fff; box-shadow:var(--shadow-s);
+    display:flex; align-items:center; justify-content:center; font-size:22px;}
+  .scroll{flex:1; overflow:hidden; display:flex; flex-direction:column; gap:18px;}
+
+  .kpi{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  .k-card{background:var(--panel); border-radius:var(--radius); padding:20px 24px; box-shadow:var(--shadow); border:1px solid #fff;}
+  .k-card .k-lbl{font-size:13px; color:var(--ink-2); font-weight:600;}
+  .k-card .k-num{font-size:36px; font-weight:800; margin-top:6px; line-height:1;}
+  .k-card .k-unit{font-size:15px; color:var(--ink-3); font-weight:600; margin-left:4px;}
+  .k-card .k-trend{font-size:12px; color:var(--under); font-weight:600; margin-top:8px;}
+
+  .cols{display:grid; grid-template-columns:1.35fr 1fr; gap:18px; flex:1; min-height:0;}
+  .card{background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px 24px; border:1px solid #fff;
+    display:flex; flex-direction:column; min-height:0;}
+  .card-h{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .card-h .t{font-size:17px; font-weight:800;}
+  .card-h .more{font-size:13px; color:var(--brand-d); font-weight:600;}
+
+  /* 柱状图 */
+  .chart{flex:1; display:flex; align-items:flex-end; gap:14px; padding:8px 4px 0; min-height:0;}
+  .day{flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; justify-content:flex-end;}
+  .bars{display:flex; align-items:flex-end; gap:4px; height:200px; width:100%; justify-content:center;}
+  .bar{width:14px; border-radius:6px 6px 0 0; transition:.2s;}
+  .bar:hover{filter:brightness(1.05);}
+  .bar.pee{background:var(--pee);} .bar.poop{background:var(--poop);}
+  .bar.under{background:var(--under);} .bar.diaper{background:var(--diaper);}
+  .day .dl{font-size:12px; color:var(--ink-3); font-weight:600;}
+  .legend{display:flex; gap:16px; margin-top:12px; flex-wrap:wrap; justify-content:center;}
+  .legend span{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-2);}
+  .legend i{width:10px; height:10px; border-radius:3px; display:inline-block;}
+
+  /* 常见时段 */
+  .chips{display:flex; flex-direction:column; gap:12px;}
+  .chip{display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:var(--radius-s);
+    background:var(--cream); font-size:15px; font-weight:600; color:var(--ink);}
+  .chip.hot{background:linear-gradient(135deg,#FFF1E8,#FFE6D8); color:var(--brand-d);}
+  .chip .fire{font-size:18px;}
+  .chip .ct{margin-left:auto; font-size:13px; color:var(--ink-3); font-weight:700;}
+  .chip.hot .ct{color:var(--brand-d);}
+  .trend-note{margin-top:14px; padding:14px 16px; border-radius:var(--radius-s); background:var(--pee-bg);
+    font-size:13px; color:#0d6e9e; font-weight:600; line-height:1.5;}
+
+  /* 近7天明细 */
+  .day7{display:grid; grid-template-columns:repeat(7,1fr); gap:12px;}
+  .dc{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-s); padding:14px; box-shadow:var(--shadow-s);}
+  .dc .dl{font-size:13px; font-weight:700; color:var(--ink);}
+  .dc .dw{font-size:11px; color:var(--ink-3); margin-top:2px;}
+  .dc .dt{font-size:26px; font-weight:800; margin:6px 0 10px; color:var(--brand-d);}
+  .dc .drow{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-2); padding:3px 0;}
+  .dc .drow .di{font-size:14px;}
+</style>
+</head>
+<body>
+  <div class="caption">画板预览 · <b>iPad Pro 12.9″</b> 横屏 2732×2048 · 网页 App 模式 · 当前页：分析页</div>
+  <div class="device">
+    <div class="screen">
+      <aside class="sidebar">
+        <div class="brand"><div class="logo">👶</div><div class="name">如厕训练<small>POTTY TRAINER</small></div></div>
+        <nav class="nav">
+          <div class="nav-item"><span class="ic">📝</span>记录</div>
+          <div class="nav-item active"><span class="ic">📊</span>分析</div>
+          <div class="nav-item"><span class="ic">📜</span>历史</div>
+        </nav>
+        <div class="side-foot"><div class="ava">👩</div><div class="who"><small>当前记录人</small><b>妈妈</b></div></div>
+      </aside>
+      <main class="main">
+        <div class="topbar">
+          <div><h1>趋势分析</h1><div class="sub">近 7 天 · 7月10日 – 7月16日</div></div>
+        </div>
+        <div class="scroll">
+          <section class="kpi">
+            <div class="k-card"><div class="k-lbl">本周记录</div><div class="k-num">48<span class="k-unit">次</span></div><div class="k-trend">▲ 较上周 +5</div></div>
+            <div class="k-card"><div class="k-lbl">日均次数</div><div class="k-num">6.9<span class="k-unit">次/天</span></div><div class="k-trend">▲ +0.7</div></div>
+            <div class="k-card"><div class="k-lbl">最常见时段</div><div class="k-num" style="font-size:24px;padding-top:8px;">上午 9–11点</div><div class="k-trend">📈 出现 6 次</div></div>
+          </section>
+          <section class="cols">
+            <div class="card">
+              <div class="card-h"><span class="t">本周趋势</span></div>
+              <div class="chart">
+                <div class="day"><div class="bars"><div class="bar pee" style="height:71%"></div><div class="bar poop" style="height:29%"></div><div class="bar under" style="height:43%"></div><div class="bar diaper" style="height:14%"></div></div><div class="dl">7/10</div></div>
+                <div class="day"><div class="bars"><div class="bar pee" style="height:43%"></div><div class="bar poop" style="height:14%"></div><div class="bar under" style="height:57%"></div><div class="bar diaper" style="height:0%"></div></div><div class="dl">7/11</div></div>
+                <div class="day"><div class="bars"><div class="bar pee" style="height:86%"></div><div class="bar poop" style="height:29%"></div><div class="bar under" style="height:29%"></div><div class="bar diaper" style="height:14%"></div></div><div class="dl">7/12</div></div>
+                <div class="day"><div class="bars"><div class="bar pee" style="height:57%"></div><div class="bar poop" style="height:43%"></div><div class="bar under" style="height:71%"></div><div class="bar diaper" style="height:0%"></div></div><div class="dl">7/13</div></div>
+                <div class="day"><div class="bars"><div class="bar pee" style="height:100%"></div><div class="bar poop" style="height:14%"></div><div class="bar under" style="height:57%"></div><div class="bar diaper" style="height:14%"></div></div><div class="dl">7/14</div></div>
+                <div class="day"><div class="bars"><div class="bar pee" style="height:71%"></div><div class="bar poop" style="height:29%"></div><div class="bar under" style="height:43%"></div><div class="bar diaper" style="height:0%"></div></div><div class="dl">7/15</div></div>
+                <div class="day"><div class="bars"><div class="bar pee" style="height:86%"></div><div class="bar poop" style="height:29%"></div><div class="bar under" style="height:57%"></div><div class="bar diaper" style="height:0%"></div></div><div class="dl">7/16</div></div>
+              </div>
+              <div class="legend">
+                <span><i style="background:var(--pee)"></i>小便</span>
+                <span><i style="background:var(--poop)"></i>大便</span>
+                <span><i style="background:var(--under)"></i>小内裤</span>
+                <span><i style="background:var(--diaper)"></i>尿不湿</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h"><span class="t">常见时段</span></div>
+              <div class="chips">
+                <div class="chip hot"><span class="fire">🔥</span>上午 9–11点<span class="ct">6 次</span></div>
+                <div class="chip hot"><span class="fire">🔥</span>下午 2–4点<span class="ct">5 次</span></div>
+                <div class="chip hot"><span class="fire">🔥</span>晚上 7–9点<span class="ct">4 次</span></div>
+                <div class="chip"><span class="fire">🌅</span>清晨 6–8点<span class="ct">3 次</span></div>
+                <div class="chip"><span class="fire">🌙</span>深夜 11–1点<span class="ct">1 次</span></div>
+              </div>
+              <div class="trend-note">💡 宝宝近期在上午时段如厕最规律，建议把“主动引导”安排在 9 点前后。</div>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-h"><span class="t">近 7 天明细</span></div>
+            <div class="day7">
+              <div class="dc"><div class="dl">7/10</div><div class="dw">周五</div><div class="dt">11</div>
+                <div class="drow"><span class="di">💧</span>小便 5</div><div class="drow"><span class="di">💩</span>大便 2</div><div class="drow"><span class="di">🩲</span>内裤 3</div></div>
+              <div class="dc"><div class="dl">7/11</div><div class="dw">周六</div><div class="dt">8</div>
+                <div class="drow"><span class="di">💧</span>小便 4</div><div class="drow"><span class="di">💩</span>大便 1</div><div class="drow"><span class="di">🩲</span>内裤 4</div></div>
+              <div class="dc"><div class="dl">7/12</div><div class="dw">周日</div><div class="dt">12</div>
+                <div class="drow"><span class="di">💧</span>小便 6</div><div class="drow"><span class="di">💩</span>大便 2</div><div class="drow"><span class="di">🩲</span>内裤 2</div></div>
+              <div class="dc"><div class="dl">7/13</div><div class="dw">周一</div><div class="dt">12</div>
+                <div class="drow"><span class="di">💧</span>小便 4</div><div class="drow"><span class="di">💩</span>大便 3</div><div class="drow"><span class="di">🩲</span>内裤 5</div></div>
+              <div class="dc"><div class="dl">7/14</div><div class="dw">周二</div><div class="dt">14</div>
+                <div class="drow"><span class="di">💧</span>小便 7</div><div class="drow"><span class="di">💩</span>大便 1</div><div class="drow"><span class="di">🩲</span>内裤 4</div></div>
+              <div class="dc"><div class="dl">7/15</div><div class="dw">周三</div><div class="dt">11</div>
+                <div class="drow"><span class="di">💧</span>小便 5</div><div class="drow"><span class="di">💩</span>大便 2</div><div class="drow"><span class="di">🩲</span>内裤 3</div></div>
+              <div class="dc"><div class="dl">7/16</div><div class="dw">周四</div><div class="dt">13</div>
+                <div class="drow"><span class="di">💧</span>小便 6</div><div class="drow"><span class="di">💩</span>大便 2</div><div class="drow"><span class="di">🩲</span>内裤 4</div></div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,8 +1,18 @@
-<view class="page">
+<view class="page {{uiMode}}">
   <view class="appbar" style="padding-top: {{navHeight}}px;">
-    <view class="appbar-title">📋 历史记录</view>
+    <view class="appbar-titles">
+      <view class="appbar-title">历史记录</view>
+      <view class="appbar-sub">全部记录 · 按日期分组</view>
+    </view>
+    <view class="appbar-act" bindtap="onClearAll">🗑 清空我的</view>
   </view>
 
+  <view class="content">
+  <view class="hist-summary">
+    <view class="hs-stat"><view class="hs-num">{{totalCount}}</view><view class="hs-lbl">总记录</view></view>
+    <view class="hs-stat"><view class="hs-num">{{groups.length}}</view><view class="hs-lbl">记录天数</view></view>
+    <view class="hs-stat hs-accent"><view class="hs-num">{{todayCount}}</view><view class="hs-lbl">今日记录</view></view>
+  </view>
   <view wx:if="{{groups.length === 0}}" class="card"><view class="empty-center">📭 暂无记录，开始记录宝宝的如厕情况吧！</view></view>
 
   <view wx:if="{{groups.length > 0}}" class="card">
@@ -11,12 +21,12 @@
       <view class="clear-all" bindtap="onClearAll">清空全部</view>
     </view>
 
+    <view class="groups">
     <view wx:for="{{groups}}" wx:key="date" class="group">
       <!-- 日期行 -->
       <view class="hist-row {{item.isToday ? 'today' : ''}}" bindtap="toggleDate" data-date="{{item.date}}">
         <view class="hist-left">
           <text class="date">{{item.dateLabel}}</text>
-          <text wx:if="{{item.isToday}}" class="today-chip">今天</text>
         </view>
         <view class="hist-right">
           <text wx:if="{{item.poopCount > 0}}" class="mini-chip chip-poop">💩{{item.poopCount}}</text>
@@ -27,8 +37,8 @@
         </view>
       </view>
 
-      <!-- 展开详情 -->
-      <view wx:if="{{expanded[item.date]}}" class="hist-detail">
+      <!-- 展开详情（平板下恒展开） -->
+      <view wx:if="{{uiMode === 'tablet' || expanded[item.date]}}" class="hist-detail">
         <view wx:for="{{item.records}}" wx:for-item="rec" wx:key="id" class="hd-item">
           <view class="hd-left">
             <view class="hd-dot" style="background:{{rec.color}}"></view>
@@ -48,9 +58,11 @@
 
       <view class="hist-sep"></view>
     </view>
+    </view>
   </view>
 
   <view style="height:40rpx;"></view>
+  </view>
 
   <!-- 修改时间弹层 -->
   <view wx:if="{{showEditor}}" class="sheet-mask" bindtap="closeEditor">

@@ -1,4 +1,4 @@
-const { STORAGE_KEYS, USE_CLOUD, CLOUD } = require('./config');
+const { USE_CLOUD, CLOUD } = require('./config');
 
 App({
   globalData: {
@@ -40,19 +40,21 @@ App({
     if (USE_CLOUD && CLOUD.ENV) {
       try {
         wx.cloud.init({ env: CLOUD.ENV, traceUser: true });
+        // 仅在 init 真正成功时才标记「已就绪」，避免失败被误判为成功
+        this.globalData.cloudInitAttempted = true;
+        this.globalData.cloudInitFailed = false;
       } catch (e) {
         console.warn('[cloud] init failed at onLaunch, will retry on first use:', e);
+        // 失败时显式标记，profile.js 等模块据此重试而非误判就绪
+        this.globalData.cloudInitAttempted = false;
+        this.globalData.cloudInitFailed = true;
       }
+    } else {
+      this.globalData.cloudInitAttempted = false;
     }
-    // 标记云初始化意图，供 profile.js 等模块在初次调用前补刀
-    this.globalData.cloudInitAttempted = USE_CLOUD && !!CLOUD.ENV;
     this.globalData.cloudEnv = CLOUD.ENV;
 
-    // 启动即检查是否已通过校验（授权 + 密码）。已校验则直接进入记录页，
-    // 否则由 lock 页作为首页处理授权与密码。
-    const verified = wx.getStorageSync(STORAGE_KEYS.VERIFIED);
-    if (verified) {
-      wx.switchTab({ url: '/pages/record/record' });
-    }
+    // 入口跳转统一交由 lock 页（首页）处理：已校验则跳记录页，否则展示锁屏。
+    // 此处不再跳转，避免「先渲染锁屏再跳走」的闪屏问题。
   },
 });

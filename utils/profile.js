@@ -34,18 +34,22 @@ function getCurrentProfile() {
 function ensureCloudInit() {
   if (!CLOUD.ENV) return false;
   const app = getApp();
-  // 如果 app.js 已经尝试过 init，说明环境就绪；否则再试一次
-  if (app && app.globalData && app.globalData.cloudInitAttempted) return true;
+  // 只有「已尝试且未失败」才算就绪；若 app.js 里 init 失败(cloudInitFailed)则重试
+  if (app && app.globalData && app.globalData.cloudInitAttempted && !app.globalData.cloudInitFailed) {
+    return true;
+  }
   if (typeof wx === 'undefined' || !wx.cloud) return false;
   try {
     wx.cloud.init({ env: CLOUD.ENV, traceUser: true });
     if (app && app.globalData) {
       app.globalData.cloudInitAttempted = true;
+      app.globalData.cloudInitFailed = false;
       app.globalData.cloudEnv = CLOUD.ENV;
     }
     return true;
   } catch (e) {
     console.warn('[cloud] init retry failed in profile.js:', e);
+    if (app && app.globalData) app.globalData.cloudInitFailed = true;
     return false;
   }
 }

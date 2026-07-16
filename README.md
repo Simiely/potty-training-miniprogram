@@ -21,6 +21,18 @@ git clone https://github.com/Simiely/potty-training-miniprogram.git
 > **仅本地使用**：不改云配置也能跑，数据存手机本地。
 > **跨设备共享**：需要配置云开发环境，见 [CLOUD_GUIDE.md](./CLOUD_GUIDE.md)。
 
+## 📋 从 GitHub 下载后 · 配置清单
+
+仓库默认是「开箱即跑」的占位配置，**无需任何改动就能在开发者工具里预览（本地模式）**。按需填写以下三项即可启用对应能力：
+
+| 配置项 | 文件 | 默认值（占位） | 你要做的 |
+| --- | --- | --- | --- |
+| 小程序 AppID | `project.config.json` → `appid` | `touristappid` | 游客模式可预览；要真机/云能力就换成你的真实 AppID |
+| 锁屏密码 | `config.js` → `LOCK_PASSWORD` | `0000` | 改成你自己的 4 位密码再发布 |
+| 云环境 ID | `config.js` → `CLOUD.ENV` | `''`（空） | 填 `cloud1-xxxx`；并把下面的 `USE_CLOUD` 改为 `true` |
+
+> 说明：当前 `USE_CLOUD = false`，数据只存在本机。填好 `ENV` 并把 `USE_CLOUD` 改成 `true` 后，记录会同步到微信云开发（跨设备共享）。集合名固定为 `potty_records`，首次使用需在云控制台建集合并设权限「所有用户可读，仅创建者可写」。详细步骤见 [CLOUD_GUIDE.md](./CLOUD_GUIDE.md)。
+
 ---
 
 ## 功能

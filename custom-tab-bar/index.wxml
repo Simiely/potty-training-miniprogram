@@ -1,13 +1,15 @@
-<view class="tabbar">
+<view class="tabbar {{tablet ? 'tablet' : ''}}">
   <view
     wx:for="{{list}}"
     wx:key="index"
     class="tab {{selected === index ? 'active' : ''}}"
     data-index="{{index}}"
+    hover-class="tab-hover"
+    hover-stay-time="80"
     bindtap="switchTab"
   >
+    <view class="pill"></view>
     <view class="icon-wrap">
-      <view class="pill {{selected === index ? 'on' : ''}}"></view>
       <image class="icon" src="{{item.icon}}" mode="aspectFit" />
     </view>
     <view class="label">{{item.text}}</view>

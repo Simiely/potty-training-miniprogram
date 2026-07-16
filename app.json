@@ -26,6 +26,7 @@
       { "pagePath": "pages/history/history", "text": "历史", "iconPath": "assets/tab-history.png", "selectedIconPath": "assets/tab-history-active.png" }
     ]
   },
+  "resizable": true,
   "lazyCodeLoading": "requiredComponents",
   "style": "v2",
   "darkmode": true,

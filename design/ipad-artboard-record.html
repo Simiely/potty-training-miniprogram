@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>画板 · iPad Pro 12.9″ 记录页仪表盘</title>
+<style>
+  :root{
+    --brand:#FF8A65; --brand-d:#FB6F43; --brand-l:#FFB187;
+    --cream:#FFF6EF; --panel:#FFFFFF; --ink:#3E2723; --ink-2:#7A6A63; --ink-3:#A8978E;
+    --line:#F0E2D8;
+    --pee:#29B6F6; --pee-bg:#E6F6FE;
+    --poop:#8D6E63; --poop-bg:#F3ECE8;
+    --under:#66BB6A; --under-bg:#E9F6EA;
+    --diaper:#9575CD; --diaper-bg:#F1ECFA;
+    --radius:22px; --radius-s:14px;
+    --shadow:0 10px 30px rgba(120,80,60,.10); --shadow-s:0 4px 14px rgba(120,80,60,.08);
+    --nav-w:268px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:radial-gradient(120% 120% at 50% 0%, #FFE9DC 0%, #FBE3D6 45%, #F3D7C6 100%);
+    min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    padding:40px 20px 60px; color:var(--ink);
+  }
+  .caption{font-size:14px; color:#8a6f63; letter-spacing:.5px; margin-bottom:18px; font-weight:600;}
+  .caption b{color:var(--brand-d);}
+
+  /* ===== 设备外框 iPad Pro 12.9 ===== */
+  .device{
+    width:1366px; height:1024px; background:#1b1b1d; border-radius:46px;
+    padding:22px; box-shadow:0 40px 90px rgba(80,40,20,.35), inset 0 0 0 2px #2c2c2e;
+    position:relative;
+  }
+  .device::before{ /* 摄像头 */
+    content:""; position:absolute; top:11px; left:50%; transform:translateX(-50%);
+    width:8px; height:8px; border-radius:50%; background:#0a0a0a; box-shadow:0 0 0 2px #2c2c2e;
+  }
+  .screen{
+    width:100%; height:100%; background:var(--cream); border-radius:28px;
+    display:flex; overflow:hidden;
+  }
+
+  /* ===== 左侧导航 ===== */
+  .sidebar{
+    width:var(--nav-w); flex:0 0 var(--nav-w); background:#FFFDFB;
+    border-right:1px solid var(--line); padding:26px 18px; display:flex; flex-direction:column;
+  }
+  .brand{display:flex; align-items:center; gap:12px; padding:6px 10px 22px;}
+  .brand .logo{width:46px; height:46px; border-radius:14px; background:linear-gradient(135deg,var(--brand),var(--brand-d));
+    display:flex; align-items:center; justify-content:center; font-size:24px; box-shadow:var(--shadow-s);}
+  .brand .name{font-size:17px; font-weight:800; line-height:1.2;}
+  .brand .name small{display:block; font-size:11px; font-weight:600; color:var(--ink-3); letter-spacing:.5px;}
+  .nav{display:flex; flex-direction:column; gap:6px; margin-top:6px;}
+  .nav-item{display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:14px;
+    font-size:16px; font-weight:600; color:var(--ink-2); cursor:pointer; transition:.15s; position:relative;}
+  .nav-item .ic{font-size:20px; width:24px; text-align:center;}
+  .nav-item:hover{background:#FBEDE4; color:var(--ink);}
+  .nav-item.active{background:linear-gradient(135deg,#FFE6D8,#FFEFE6); color:var(--brand-d);}
+  .nav-item.active::before{content:""; position:absolute; left:0; top:50%; transform:translateY(-50%);
+    width:4px; height:24px; border-radius:4px; background:var(--brand);}
+  .side-foot{margin-top:auto; display:flex; align-items:center; gap:12px; padding:14px 12px;
+    border-top:1px solid var(--line);}
+  .side-foot .ava{width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,#FFD0B8,#FFB187);
+    display:flex; align-items:center; justify-content:center; font-size:22px;}
+  .side-foot .who b{font-size:14px;} .side-foot .who small{display:block; font-size:12px; color:var(--ink-3);}
+
+  /* ===== 主内容 ===== */
+  .main{flex:1; padding:30px 36px 36px; overflow:hidden; display:flex; flex-direction:column;}
+  .topbar{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:24px;}
+  .topbar h1{font-size:30px; font-weight:800; letter-spacing:.5px;}
+  .topbar .sub{font-size:14px; color:var(--ink-3); margin-top:6px;}
+  .topbar .avatar{width:46px; height:46px; border-radius:50%; background:#fff; box-shadow:var(--shadow-s);
+    display:flex; align-items:center; justify-content:center; font-size:22px;}
+
+  .scroll{flex:1; overflow:hidden; display:flex; flex-direction:column; gap:20px;}
+
+  /* 快捷记录 */
+  .quick{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+  .q-tile{background:var(--panel); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow);
+    display:flex; flex-direction:column; gap:10px; transition:.18s; cursor:pointer; border:1px solid #fff;}
+  .q-tile:hover{transform:translateY(-4px); box-shadow:0 16px 34px rgba(120,80,60,.16);}
+  .q-ic{width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:26px;}
+  .q-tile .lbl{font-size:17px; font-weight:700;}
+  .q-tile .hint{font-size:12px; color:var(--ink-3);}
+  .q-pee .q-ic{background:var(--pee-bg);} .q-poop .q-ic{background:var(--poop-bg);}
+  .q-under .q-ic{background:var(--under-bg);} .q-diaper .q-ic{background:var(--diaper-bg);}
+
+  /* KPI */
+  .kpi{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+  .k-card{background:var(--panel); border-radius:var(--radius); padding:20px 22px; box-shadow:var(--shadow);
+    border:1px solid #fff;}
+  .k-card .k-lbl{font-size:13px; color:var(--ink-2); font-weight:600;}
+  .k-card .k-num{font-size:38px; font-weight:800; margin-top:6px; line-height:1;}
+  .k-card .k-unit{font-size:15px; color:var(--ink-3); font-weight:600; margin-left:4px;}
+  .k-card .k-trend{font-size:12px; color:var(--under); font-weight:600; margin-top:8px;}
+
+  /* 双栏 */
+  .cols{display:grid; grid-template-columns:1.25fr 1fr; gap:20px; flex:1; min-height:0;}
+  .card{background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px 24px; border:1px solid #fff;
+    display:flex; flex-direction:column; min-height:0;}
+  .card-h{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+  .card-h .t{font-size:17px; font-weight:800;}
+  .card-h .more{font-size:13px; color:var(--brand-d); font-weight:600;}
+
+  /* 时间线 */
+  .tl{display:flex; flex-direction:column; gap:4px; overflow:hidden;}
+  .tl-row{display:flex; align-items:center; gap:14px; padding:12px 4px; border-bottom:1px dashed var(--line);}
+  .tl-row:last-child{border-bottom:none;}
+  .tl-time{font-size:15px; font-weight:700; width:62px; color:var(--ink);}
+  .tl-badge{font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px;}
+  .b-pee{background:var(--pee-bg); color:var(--pee);} .b-poop{background:var(--poop-bg); color:var(--poop);}
+  .b-under{background:var(--under-bg); color:var(--under);} .b-diaper{background:var(--diaper-bg); color:var(--diaper);}
+  .tl-note{font-size:13px; color:var(--ink-3); margin-left:auto;}
+
+  /* 预测 */
+  .pred-hero{background:linear-gradient(135deg,#FFF1E8,#FFE0CC); border-radius:18px; padding:20px; text-align:center;}
+  .pred-hero .ph-lbl{font-size:13px; color:var(--brand-d); font-weight:700;}
+  .pred-hero .ph-time{font-size:34px; font-weight:800; margin:8px 0 4px; color:var(--ink);}
+  .pred-hero .ph-win{font-size:13px; color:var(--ink-2);}
+  .conf{display:flex; align-items:center; gap:10px; margin:18px 0 14px;}
+  .conf .bar{flex:1; height:10px; border-radius:999px; background:#F1E2D7; overflow:hidden;}
+  .conf .bar i{display:block; height:100%; width:63%; background:linear-gradient(90deg,var(--brand-l),var(--brand)); border-radius:999px;}
+  .conf .pct{font-size:14px; font-weight:800; color:var(--brand-d);}
+  .pred-stat{display:flex; justify-content:space-between; font-size:13px; color:var(--ink-2); padding:8px 2px; border-top:1px dashed var(--line);}
+  .pred-stat b{color:var(--ink); font-weight:700;}
+
+  .legend{display:flex; gap:18px; margin-top:14px; flex-wrap:wrap;}
+  .legend span{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-2);}
+  .legend i{width:10px; height:10px; border-radius:3px; display:inline-block;}
+</style>
+</head>
+<body>
+  <div class="caption">画板预览 · <b>iPad Pro 12.9″</b> 横屏 2732×2048 · 网页 App 模式 · 当前页：记录页仪表盘</div>
+
+  <div class="device">
+    <div class="screen">
+      <!-- 侧边导航 -->
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="logo">👶</div>
+          <div class="name">如厕训练<small>POTTY TRAINER</small></div>
+        </div>
+        <nav class="nav">
+          <div class="nav-item active"><span class="ic">📝</span>记录</div>
+          <div class="nav-item"><span class="ic">📊</span>分析</div>
+          <div class="nav-item"><span class="ic">📜</span>历史</div>
+        </nav>
+        <div class="side-foot">
+          <div class="ava">👩</div>
+          <div class="who"><small>当前记录人</small><b>妈妈</b></div>
+        </div>
+      </aside>
+
+      <!-- 主内容 -->
+      <main class="main">
+        <div class="topbar">
+          <div>
+            <h1>今日记录</h1>
+            <div class="sub">2026年7月16日 · 星期四</div>
+          </div>
+        </div>
+
+        <div class="scroll">
+          <!-- 快捷记录 -->
+          <section class="quick">
+            <div class="q-tile q-pee"><div class="q-ic">💧</div><div class="lbl">小便</div><div class="hint">记录一次排尿</div></div>
+            <div class="q-tile q-poop"><div class="q-ic">💩</div><div class="lbl">大便</div><div class="hint">记录一次排便</div></div>
+            <div class="q-tile q-under"><div class="q-ic">🩲</div><div class="lbl">换小内裤</div><div class="hint">成功使用马桶</div></div>
+            <div class="q-tile q-diaper"><div class="q-ic">👶</div><div class="lbl">换尿不湿</div><div class="hint">意外 / 更换</div></div>
+          </section>
+
+          <!-- KPI -->
+          <section class="kpi">
+            <div class="k-card"><div class="k-lbl">今日小便</div><div class="k-num">5<span class="k-unit">次</span></div><div class="k-trend">▲ 较昨日 +1</div></div>
+            <div class="k-card"><div class="k-lbl">今日大便</div><div class="k-num">2<span class="k-unit">次</span></div><div class="k-trend">持平</div></div>
+            <div class="k-card"><div class="k-lbl">今日小内裤</div><div class="k-num">4<span class="k-unit">次</span></div><div class="k-trend">▲ +2</div></div>
+            <div class="k-card"><div class="k-lbl">今日尿不湿</div><div class="k-num">1<span class="k-unit">次</span></div><div class="k-trend">▼ -1</div></div>
+          </section>
+
+          <!-- 双栏 -->
+          <section class="cols">
+            <div class="card">
+              <div class="card-h"><span class="t">今日时间线</span><span class="more">查看全部</span></div>
+              <div class="tl">
+                <div class="tl-row"><span class="tl-time">07:42</span><span class="tl-badge b-pee">小便</span><span class="tl-note">晨间 · 妈妈</span></div>
+                <div class="tl-row"><span class="tl-time">09:15</span><span class="tl-badge b-under">小内裤</span><span class="tl-note">主动告知 ✅</span></div>
+                <div class="tl-row"><span class="tl-time">11:03</span><span class="tl-badge b-poop">大便</span><span class="tl-note">饭后 · 爸爸</span></div>
+                <div class="tl-row"><span class="tl-time">13:20</span><span class="tl-badge b-pee">小便</span><span class="tl-note">午睡前</span></div>
+                <div class="tl-row"><span class="tl-time">15:48</span><span class="tl-badge b-diaper">尿不湿</span><span class="tl-note">午睡意外</span></div>
+                <div class="tl-row"><span class="tl-time">17:30</span><span class="tl-badge b-pee">小便</span><span class="tl-note">玩耍后</span></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="t">智能预测</span><span class="more">原理</span></div>
+              <div class="pred-hero">
+                <div class="ph-lbl">下次如厕预测</div>
+                <div class="ph-time">约 14:30</div>
+                <div class="ph-win">常见窗口 14:00 – 15:00</div>
+              </div>
+              <div class="conf">
+                <div class="bar"><i></i></div>
+                <div class="pct">63%</div>
+              </div>
+              <div class="pred-stat"><span>预测置信度</span><b>中等</b></div>
+              <div class="pred-stat"><span>样本量</span><b>近 28 次记录</b></div>
+              <div class="pred-stat"><span>建议</span><b>提前 10 分钟引导</b></div>
+              <div class="legend">
+                <span><i style="background:var(--pee)"></i>小便</span>
+                <span><i style="background:var(--poop)"></i>大便</span>
+                <span><i style="background:var(--under)"></i>小内裤</span>
+                <span><i style="background:var(--diaper)"></i>尿不湿</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

@@ -13,6 +13,16 @@
   background: transparent; border: 1rpx solid var(--danger-border); border-radius: 24rpx; padding: 10rpx 22rpx;
 }
 
+/* 统计摘要卡 */
+.hist-summary { display: flex; gap: 14rpx; margin: 24rpx 24rpx 0; }
+.hs-stat {
+  flex: 1; text-align: center; padding: 22rpx;
+  border-radius: 24rpx; background: var(--card-bg); box-shadow: var(--card-shadow);
+}
+.hs-num { font-size: 40rpx; font-weight: 800; color: var(--text-main); line-height: 1.1; }
+.hs-stat.hs-accent .hs-num { color: #FF8A65; }
+.hs-lbl { font-size: 22rpx; color: var(--text-muted); margin-top: 4rpx; }
+
 .group { margin-bottom: 4rpx; }
 .hist-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -23,7 +33,6 @@
 .hist-row.today:active { background: var(--today-active-bg); }
 .hist-left { display: flex; align-items: center; gap: 16rpx; }
 .hist-left .date { font-size: 28rpx; font-weight: 600; }
-.today-chip { font-size: 20rpx; font-weight: 600; color: #fff; background: #42A5F5; padding: 2rpx 14rpx; border-radius: 999rpx; }
 .hist-right { display: flex; align-items: center; gap: 10rpx; flex-wrap: wrap; }
 .mini-chip { font-size: 20rpx; font-weight: 600; padding: 4rpx 14rpx; border-radius: 999rpx; }
 .chip-pee { background: var(--stat-pee-bg); color: var(--stat-pee-text); }
@@ -48,6 +57,9 @@
 .hd-edit:active { color: #42A5F5; }
 
 .hist-sep { height: 1rpx; background: var(--border); margin-top: 16rpx; }
+
+/* 分组容器：平板下双列 */
+.groups { display: block; }
 
 /* 修改时间弹层 */
 .sheet-mask {
@@ -74,3 +86,46 @@
 .ebtn-cancel { background: var(--trend-bg); color: var(--text-muted); }
 .ebtn-save { background: #FF8A65; color: #fff; }
 .ebtn-save:active { background: #FB7B4B; }
+
+/* ============================================================
+   平板 / 大屏（.tablet 由 JS 挂上，px 单位，双列历史卡片）
+   ============================================================ */
+.tablet .hist-summary { margin: 0 0 20px; gap: var(--t-gap); }
+/* 平板顶栏已含标题与「清空我的」，隐藏卡片内重复头部 */
+.tablet .card-head { display: none; }
+.tablet .hs-stat { padding: 18px; border-radius: var(--t-radius-lg); box-shadow: var(--t-shadow); }
+.tablet .hs-num { font-size: var(--t-num); }
+.tablet .hs-lbl { font-size: var(--t-fs-sm); }
+.tablet .groups { display: grid; grid-template-columns: 1fr 1fr; gap: var(--t-gap); }
+.tablet .group {
+  margin-bottom: 0;
+  background: var(--trend-bg);
+  border-radius: var(--t-radius-lg);
+  padding: 8px 14px;
+}
+.tablet .hist-sep { display: none; }
+.tablet .hist-row { padding: 16px 18px; border-radius: var(--t-radius); }
+.tablet .hist-left .date { font-size: var(--t-fs); }
+.tablet .mini-chip { font-size: var(--t-fs-sm); padding: 4px 12px; }
+.tablet .arrow { font-size: 18px; }
+.tablet .hd-item { padding: 14px; border-radius: var(--t-radius); }
+.tablet .hd-name { font-size: var(--t-fs); min-width: 120px; }
+.tablet .hd-time { font-size: var(--t-fs-sm); }
+.tablet .hd-rname { font-size: var(--t-fs-sm); }
+.tablet .sheet { max-width: 720px; }
+.tablet .picker-label, .tablet .picker-val { font-size: var(--t-fs); }
+.tablet .ebtn { font-size: var(--t-fs); }
+/* 空状态：px 固定字号，避免 rpx 在 iPad 上被放大 */
+.tablet .empty-center { font-size: var(--t-fs); padding: 48px 24px; }
+
+/* 平板底部弹层（修改时间）也用 px，避免 rpx 放大；详情内删除/编辑图标与分隔点同样收敛 */
+.tablet .sheet-title { font-size: 18px; margin-bottom: 18px; }
+.tablet .picker-group { padding: 16px 18px; margin-bottom: 14px; border-radius: 12px; }
+.tablet .picker-label { font-size: 18px; }
+.tablet .picker-val { font-size: 18px; }
+.tablet .editor-actions { margin-top: 18px; }
+.tablet .ebtn { padding: 16px 0; border-radius: 999px; font-size: 18px; }
+.tablet .hd-del, .tablet .hd-edit { font-size: 22px; padding: 0 8px; }
+.tablet .hd-dot { width: 12px; height: 12px; }
+.tablet .hist-detail { padding: 4px 12px 12px 18px; }
+.tablet .clear-all { font-size: 15px; padding: 8px 14px; }

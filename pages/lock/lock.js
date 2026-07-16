@@ -1,10 +1,12 @@
 const { LOCK_PASSWORD, STORAGE_KEYS } = require('../../config');
+const { detectTablet } = require('../../utils/device');
 const app = getApp();
 
 Page({
   data: {
     navHeight: 64,      // 状态栏 + 胶囊内容区
-    authorized: false,  // 是否已微信授权
+    uiMode: 'phone',
+    authorized: true,   // 直接显示密码键盘（不再强制微信授权前置，避免游客/登录失败卡死）
     input: '',          // 当前输入的密码
     error: '',          // 错误提示
     shaking: false,     // 抖动动画
@@ -14,10 +16,13 @@ Page({
   },
 
   onLoad() {
-    // 已校验过（授权 + 密码正确）则直接进入，不再弹锁屏
+    // 已校验过（授权 + 密码正确）则直接进入。
+    // 关键：switchTab 必须延后到首帧渲染之后（setTimeout 0 / nextTick），
+    // 否则在 custom-tab-bar + lazyCodeLoading 下会触发
+    // 「routeDone with a webviewId 1 is not found」路由错误。
     const verified = wx.getStorageSync(STORAGE_KEYS.VERIFIED);
     if (verified) {
-      wx.switchTab({ url: '/pages/record/record' });
+      setTimeout(() => wx.switchTab({ url: '/pages/record/record' }), 0);
       return;
     }
     // 自定义导航下，把状态栏文字设为白色以适配暖色渐变
@@ -27,21 +32,15 @@ Page({
       navHeight: app.globalData.navHeight,
       isHarmony: app.globalData.isHarmony,
       showBio: !app.globalData.isHarmony,
+      uiMode: detectTablet() ? 'tablet' : 'phone',
     });
   },
 
-  // 微信授权（真实项目用 res.code 换 openid）
-  onAuth() {
-    wx.login({
-      success: (res) => {
-        wx.setStorageSync(STORAGE_KEYS.OPENID, res.code || 'dev');
-        this.setData({ authorized: true });
-      },
-      fail: () => wx.showToast({ title: '授权失败，请重试', icon: 'none' }),
-    });
+  onResize() {
+    this.setData({ uiMode: detectTablet() ? 'tablet' : 'phone' });
   },
 
-  // 键盘输入
+  // 键盘输入（输满 4 位自动校验）
   onKey(e) {
     const k = e.currentTarget.dataset.k;
     if (k === 'del') {

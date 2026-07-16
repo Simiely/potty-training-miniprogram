@@ -15,6 +15,9 @@
   flex-direction: column;
   align-items: center;
   padding: 40rpx 0 0;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
 }
 .lock-icon {
   width: 120rpx;
@@ -57,17 +60,19 @@
 
 .lock-dots {
   display: flex;
-  gap: 32rpx;
   justify-content: center;
-  margin-top: 48rpx;
+  margin-top: 56rpx;
 }
 .lock-dot {
-  width: 26rpx;
-  height: 26rpx;
+  width: 28rpx;
+  height: 28rpx;
   border-radius: 50%;
   border: 4rpx solid #FF8A65;
   background: transparent;
   transition: all 0.15s;
+}
+.lock-dot + .lock-dot {
+  margin-left: 48rpx; /* 点位间距；用 margin 而非 gap，兼容旧基础库 */
 }
 .lock-dot.filled {
   background: #FF8A65;
@@ -93,18 +98,20 @@
 
 .keypad {
   width: 100%;
-  padding: 24rpx 52rpx 44rpx;
+  padding: 28rpx 56rpx 48rpx;
   box-sizing: border-box;
-  margin-top: 20rpx;
+  margin-top: 32rpx;
 }
 .keypad-row {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 28rpx;
+  justify-content: center;
+  gap: 44rpx; /* 键之间固定间隙，避免被 flex 压缩成紧贴 */
+  margin-bottom: 44rpx;
 }
 .key {
   width: 150rpx;
   height: 150rpx;
+  flex-shrink: 0; /* 关键：禁止键被 flex 行压缩，否则数字会贴在一起 */
   border-radius: 50%;
   background: var(--key-bg);
   font-size: 52rpx;
@@ -145,3 +152,22 @@
   color: #E64A19;
   font-size: 22rpx;
 }
+
+/* ============================================================
+   平板 / 大屏（.tablet 由 JS 挂上，px 单位，避免 rpx 在 iPad 上爆掉）
+   ============================================================ */
+.tablet .lock-body { max-width: 600px; }
+.tablet .lock-icon { width: 100px; height: 100px; font-size: 50px; border-radius: 28px; }
+.tablet .lock-appname { font-size: 26px; margin-top: 20px; }
+.tablet .lock-prompt { font-size: var(--t-fs); }
+.tablet .lock-dots { margin-top: 40px; }
+.tablet .lock-dot { width: 20px; height: 20px; border-width: 3px; }
+.tablet .lock-dot + .lock-dot { margin-left: 32px; }
+.tablet .lock-error { font-size: var(--t-fs-sm); }
+.tablet .keypad { padding: 28px 0 36px; margin-top: 28px; }
+.tablet .keypad-row { gap: 28px; margin-bottom: 28px; }
+.tablet .key { width: 88px; height: 88px; font-size: 34px; border-radius: 50%; box-shadow: var(--t-shadow); transition: transform .12s ease; }
+.tablet .key:active { transform: scale(0.96); }
+.tablet .key.del { font-size: 32px; }
+.tablet .lock-foot .lk { font-size: var(--t-fs-sm); }
+.tablet .lock-harmony-tip { font-size: var(--t-fs-sm); }

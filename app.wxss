@@ -38,7 +38,12 @@ page {
   --stat-diaper-bg: #F3E5F5;     --stat-diaper-text: #7B1FA2;
   --conf-high-bg: #E8F5E9;       --conf-high-border: #66BB6A;
   --conf-medium-bg: #FFF8E1;     --conf-medium-border: #FFA726;
-  --conf-low-bg: #FFEBEE;        --conf-low-border: #EF9A9A;
+  --conf-low-bg: #FFEBEE;
+  /* 分析卡片方块：深浅自适应（浅色档 = 浅色底 + 饱和主色字） */
+  --dc-pee-bg: #E3F2FD;        --dc-pee-text: #1976D2;
+  --dc-poop-bg: #FFF3E0;        --dc-poop-text: #E64A19;
+  --dc-underwear-bg: #E8F5E9;  --dc-underwear-text: #388E3C;
+  --dc-diaper-bg: #F3E5F5;     --dc-diaper-text: #7B1FA2;        --conf-low-border: #EF9A9A;
 }
 
 /* —— 深色（跟随系统） —— 暖色调暗色，避免纯黑、保留品牌暖橙感 */
@@ -71,7 +76,12 @@ page {
     --stat-diaper-bg: rgba(186, 104, 200, 0.16);     --stat-diaper-text: #D49BE0;
     --conf-high-bg: rgba(102, 187, 106, 0.16);       --conf-high-border: #66BB6A;
     --conf-medium-bg: rgba(255, 167, 38, 0.16);      --conf-medium-border: #FFA726;
-    --conf-low-bg: rgba(239, 154, 154, 0.16);        --conf-low-border: #EF9A9A;
+    --conf-low-bg: rgba(239, 154, 154, 0.16);
+    /* 分析卡片方块：深浅自适应（深色档 = 20% 亮度主色底 + 80% 白字） */
+    --dc-pee-bg: #0D213A;        --dc-pee-text: rgba(255,255,255,0.8);
+    --dc-poop-bg: #40121B;        --dc-poop-text: rgba(255,255,255,0.8);
+    --dc-underwear-bg: #143019;  --dc-underwear-text: rgba(255,255,255,0.8);
+    --dc-diaper-bg: #2F1233;     --dc-diaper-text: rgba(255,255,255,0.8);        --conf-low-border: #EF9A9A;
   }
 }
 
@@ -112,3 +122,94 @@ page {
 .grad-diaper { background: linear-gradient(135deg, #CE93D8 0%, #BA68C8 100%); box-shadow: 0 8rpx 28rpx rgba(186,104,200,0.35); }
 
 .text-secondary { color: var(--text-muted); }
+
+/* 主体内容：手机端限宽 760px 居中；平板模式（.tablet）放开到 1180px */
+.content { max-width: 760px; margin: 0 auto; }
+/* 底部弹层（手机端）限宽居中 */
+.sheet { max-width: 760px; margin: 0 auto; }
+
+/* ============================================================
+   平板 / 大屏模式
+   由 JS 依据物理屏宽 screenWidth 判定后，在页面根节点挂 .tablet 类驱动。
+   不使用 @media(min-width:768px) 的原因：iPad 上 windowWidth 在某些环境
+   会被限制为手机比例绘制区宽度（~480px），导致断点永不命中，平板样式不生效。
+   平板样式统一用 px 单位，避免 rpx 在超大屏上被放大导致「字太大」。
+   ============================================================ */
+/* ============================================================
+   平板 / 大屏设计系统
+   由 JS 依据物理屏宽 screenWidth 判定后，在页面根节点挂 .tablet 类驱动。
+   设计令牌统一在此定义，各页 .tablet 规则引用，保证全站一致的
+   间距 / 圆角 / 阴影 / 字号节奏（避免逐页手写导致的不统一）。
+   平板样式统一用 px 单位，避免 rpx 在超大屏被放大导致「字太大」。
+   ============================================================ */
+.tablet {
+  --t-gap: 20px;
+  --t-gap-sm: 12px;
+  --t-radius: 16px;
+  --t-radius-lg: 22px;
+  --t-pad: 24px;
+  --t-pad-sm: 16px;
+  --t-shadow: 0 2px 8px rgba(78, 52, 46, 0.06), 0 10px 30px rgba(78, 52, 46, 0.07);
+  --t-shadow-lg: 0 6px 18px rgba(78, 52, 46, 0.12), 0 18px 44px rgba(78, 52, 46, 0.10);
+  --t-fs: 15px;
+  --t-fs-sm: 13px;
+  --t-fs-lg: 17px;
+  --t-num: 34px;
+  --t-num-lg: 44px;
+  /* 侧边导航宽度（Web App 大屏模式） */
+  --t-nav-w: 268px;
+}
+.tablet .content {
+  max-width: none;
+  padding-left: 32px;
+  padding-right: 32px;
+  box-sizing: border-box;
+}
+/* 统一的卡片语言：大圆角 + 柔和双层投影 + 细分隔边，全站一致 */
+.tablet .card {
+  margin: 0;
+  border-radius: var(--t-radius-lg);
+  padding: var(--t-pad);
+  box-shadow: var(--t-shadow);
+  border: 1rpx solid var(--border);
+}
+.tablet .card-head { margin-bottom: 20px; }
+.tablet .card-head .title { font-size: var(--t-fs-lg); }
+.tablet .card-head .sub { font-size: var(--t-fs-sm); }
+.tablet .sheet { max-width: 720px; }
+.tablet .appbar { padding: 0 32px 22px; }
+.tablet .appbar-title { font-size: 22px; letter-spacing: 0.4px; }
+/* 大屏统一底部 Tab 栏：内容底部留出 Tab 栏高度（px，避免 rpx 放大） */
+.tablet .page { padding-bottom: 100px; }
+
+
+/* 顶部标题：手机=渐变居中；平板=透明左对齐（Web App 头部：标题 + 副标题） */
+.appbar-titles { text-align: center; }
+.appbar-sub { display: none; }
+.appbar-act { display: none; }
+
+/* 平板下顶部导航：透明背景、左对齐，像 Web App 头部 */
+.tablet .appbar {
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  padding-left: 32px;
+  padding-right: 32px;
+  padding-bottom: 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.tablet .appbar-titles { text-align: left; }
+.tablet .appbar-title {
+  font-size: 30px; font-weight: 800; color: var(--text-main);
+  letter-spacing: 0.5px; line-height: 1.2;
+}
+.tablet .appbar-sub { display: block; font-size: 14px; color: var(--text-muted); margin-top: 6px; }
+.tablet .appbar-act {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 14px; font-weight: 700; color: var(--danger);
+  background: var(--card-bg); border: 1rpx solid var(--danger-border);
+  padding: 10px 18px; border-radius: 999px; margin-top: 4px; white-space: nowrap;
+}
+.tablet .appbar-act:active { opacity: 0.85; }

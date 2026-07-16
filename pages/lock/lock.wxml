@@ -1,5 +1,5 @@
 <!-- 启动锁屏页：授权 → 输入固定密码一次 → 正确则进入，错误则提示 -->
-<view class="screen lock-screen">
+<view class="screen lock-screen {{uiMode}}">
   <!-- 状态栏 + 胶囊占位（自定义导航） -->
   <view class="statusbar" style="height: {{navHeight}}px;"></view>
 
@@ -7,13 +7,7 @@
     <view class="lock-icon">🚽</view>
     <view class="lock-appname">宝宝如厕训练助手</view>
 
-    <!-- 未授权：先微信授权 -->
-    <view wx:if="{{!authorized}}">
-      <view class="lock-prompt">需要微信授权后使用</view>
-      <button class="auth-btn" bindtap="onAuth">微信一键授权</button>
-    </view>
-
-    <!-- 已授权：输入 4 位密码 -->
+    <!-- 直接输入 4 位密码（微信授权已改为非前置，避免卡死） -->
     <view wx:if="{{authorized}}">
       <view class="lock-prompt">请输入 4 位锁屏密码</view>
 

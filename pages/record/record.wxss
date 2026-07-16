@@ -14,7 +14,6 @@
   letter-spacing: 0.5px;
 }
 
-/* 快速记录 */
 /* 当前记录人胶囊 */
 .recorder-bar {
   display: flex; align-items: center; gap: 18rpx;
@@ -39,10 +38,8 @@
 .rec-name { font-size: 30rpx; font-weight: 700; color: var(--text-main); }
 .rec-caret { font-size: 24rpx; color: var(--text-muted); white-space: nowrap; }
 
-.record-grid { padding: 24rpx 24rpx 0; display: flex; flex-direction: column; gap: 22rpx; }
-.record-row { display: flex; gap: 22rpx; }
+.record-grid { padding: 24rpx 24rpx 0; display: grid; grid-template-columns: 1fr 1fr; gap: 22rpx; }
 .rec-btn {
-  flex: 1;
   padding: 36rpx 0;
   border-radius: 28rpx;
   font-size: 32rpx;
@@ -50,7 +47,8 @@
   color: #fff;
   text-align: center;
 }
-.rec-btn:active { opacity: 0.92; }
+/* 点击反馈：用 hover-class 替代不可靠的 :active（微信 <view> 上 :active 经常不触发） */
+.rec-hover { opacity: 0.9; transform: scale(0.97); }
 /* 撤销按钮：悬浮在最上层、位于底部 TabBar 上方，不挤压页面布局 */
 .undo-fab {
   position: fixed;
@@ -76,10 +74,9 @@
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
-/* 今日统计 */
-.stat-grid { display: flex; flex-direction: column; gap: 22rpx; margin-bottom: 24rpx; }
-.stat-row { display: flex; gap: 22rpx; }
-.stat-box { flex: 1; text-align: center; padding: 26rpx; border-radius: 28rpx; }
+/* 今日 KPI 统计 */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22rpx; margin: 24rpx 24rpx 0; }
+.stat-box { text-align: center; padding: 26rpx; border-radius: 28rpx; }
 .stat-box.pee { background: var(--stat-pee-bg); }
 .stat-box.pee .num { color: var(--stat-pee-text); }
 .stat-box.poop { background: var(--stat-poop-bg); }
@@ -91,7 +88,7 @@
 .stat-box .num { font-size: 56rpx; font-weight: 700; line-height: 1.1; }
 .stat-box .lbl { font-size: 24rpx; color: var(--text-muted); margin-top: 4rpx; }
 
-.empty-center { text-align: center; padding: 64rpx 40rpx; color: var(--text-muted); font-size: 26rpx; line-height: 1.8; }
+.empty-center { text-align: center; padding: 20rpx 32rpx; color: var(--text-muted); font-size: 26rpx; line-height: 1.6; }
 
 /* 时间线 */
 .tl-divider {
@@ -122,7 +119,6 @@
 .tl-rname { font-size: 22rpx; color: var(--text-muted); }
 
 /* 底部弹层（选择记录人 / 编辑照顾者） */
-.sheet-mask, .sheet-mask { }
 .sheet-mask {
   position: fixed; inset: 0; z-index: 2000;
   background: rgba(0,0,0,0.45);
@@ -195,6 +191,81 @@
 .confidence.conf-low { background: var(--conf-low-bg); }
 .conf-chip { font-size: 22rpx; font-weight: 600; color: #fff; background: #66BB6A; padding: 8rpx 18rpx; border-radius: 999rpx; white-space: nowrap; }
 .confidence .desc { font-size: 22rpx; color: var(--text-muted); }
-
 .prog { height: 16rpx; background: var(--prog-bg); border-radius: 999rpx; margin-top: 32rpx; overflow: hidden; }
 .prog-bar { height: 100%; background: #FF8A65; border-radius: 999rpx; }
+
+/* ============================================================
+   平板 / 大屏（.tablet 由 JS 依据 screenWidth 挂上，px 单位，仪表盘）
+   ============================================================ */
+/* 大屏下「当前记录人」条：用 px 固定尺寸（平板无左侧栏，此处保留作为切换入口） */
+.tablet .recorder-bar {
+  display: flex;
+  margin: 20px 0 0;
+  padding: 14px 18px;
+  border-radius: 16px;
+}
+.tablet .rec-avatar { width: 44px; height: 44px; }
+.tablet .rec-avatar-empty { font-size: 22px; }
+.tablet .rec-label { font-size: 12px; }
+.tablet .rec-name { font-size: 16px; }
+.tablet .rec-caret { font-size: 14px; }
+.tablet .record-grid { padding: 20px 0 0; grid-template-columns: repeat(4, 1fr); gap: var(--t-gap); }
+.tablet .rec-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 24px 0; border-radius: var(--t-radius-lg);
+  font-size: var(--t-fs); font-weight: 600; color: #fff; text-align: center;
+  box-shadow: var(--t-shadow);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.tablet .rec-btn .rb-ico { font-size: 30px; line-height: 1; }
+.tablet .rec-btn .rb-lbl { font-size: var(--t-fs); }
+.tablet .rec-btn:hover { transform: translateY(-3px); box-shadow: var(--t-shadow-lg); }
+.tablet .rec-hover { transform: scale(0.97); box-shadow: var(--t-shadow); }
+.tablet .undo-fab { bottom: calc(100px + env(safe-area-inset-bottom)); font-size: var(--t-fs-sm); padding: 14px 28px; }
+.tablet .stat-grid { grid-template-columns: repeat(4, 1fr); gap: var(--t-gap); margin: 20px 0 0; }
+.tablet .stat-box { padding: 18px; border-radius: var(--t-radius-lg); display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.tablet .stat-box .num { font-size: var(--t-num); }
+.tablet .stat-box .lbl { font-size: var(--t-fs-sm); }
+.tablet .rec-main .card-head .title { font-size: 15px; }
+.tablet .rec-main {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: var(--t-gap);
+  align-items: start;
+  margin-top: 20px;
+}
+.tablet .card { margin: 0; }
+.tablet .pred-window { padding: 22px; margin-bottom: 18px; border-width: 2px; border-radius: var(--t-radius); }
+.tablet .pred-window .range { font-size: var(--t-fs-lg); }
+.tablet .pred-stats { gap: var(--t-gap-sm); margin-bottom: 18px; }
+.tablet .pred-stat { padding: 14px; border-radius: var(--t-radius); }
+.tablet .pred-stat .v { font-size: 26px; }
+.tablet .pred-stat .k { font-size: var(--t-fs-sm); }
+.tablet .confidence { padding: 16px 18px; gap: 12px; border-radius: var(--t-radius); }
+.tablet .conf-chip { font-size: var(--t-fs-sm); padding: 6px 14px; }
+.tablet .confidence .desc { font-size: var(--t-fs-sm); }
+.tablet .tl-divider { font-size: 12px; margin-bottom: 16px; }
+.tablet .timeline { padding-left: 24px; }
+.tablet .tl-line .name { font-size: var(--t-fs); }
+.tablet .tl-line .time { font-size: var(--t-fs-sm); }
+.tablet .tl-rname { font-size: 12px; }
+.tablet .empty-center { font-size: var(--t-fs); padding: 16px 24px; }
+.tablet .prog { margin-top: 20px; }
+
+/* 平板底部弹层（切换记录人 / 编辑照顾者）也用 px，避免 rpx 在 iPad 被放大 */
+.tablet .sheet-title { font-size: 18px; margin-bottom: 16px; }
+.tablet .sheet-empty { font-size: 14px; padding: 16px 0; }
+.tablet .profile-item { gap: 12px; padding: 14px; border-radius: 14px; margin-bottom: 10px; }
+.tablet .pi-avatar { width: 46px; height: 46px; }
+.tablet .pi-empty { font-size: 26px; }
+.tablet .pi-name { font-size: 18px; }
+.tablet .pi-check { font-size: 15px; }
+.tablet .pi-del { font-size: 22px; }
+.tablet .sheet-cancel { padding: 14px; font-size: 18px; border-radius: 14px; }
+.tablet .avatar-btn { gap: 8px; border-radius: 14px; padding: 24px 0; margin-bottom: 18px; }
+.tablet .edit-avatar { width: 88px; height: 88px; }
+.tablet .edit-avatar-empty { font-size: 44px; }
+.tablet .avatar-tip { font-size: 14px; }
+.tablet .nick-input { border-radius: 12px; padding: 16px 18px; font-size: 18px; margin-bottom: 20px; }
+.tablet .editor-actions { gap: 14px; }
+.tablet .ebtn { padding: 16px 0; border-radius: 999px; font-size: 18px; }

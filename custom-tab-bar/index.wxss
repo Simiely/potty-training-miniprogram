@@ -16,12 +16,34 @@
   align-items: center;
   justify-content: center;
   padding: 12rpx 0 14rpx;
+  position: relative;
+  z-index: 1;
   -webkit-tap-highlight-color: transparent;
 }
-.tab:active { opacity: 0.7; }
+/* 点击反馈：用 hover-class 替代不可靠的 :active（微信 <view> 上 :active 经常不触发） */
+.tab-hover { opacity: 0.6; }
+
+/* 选中背景：每个 tab 自带一块半透明圆角底，居中垫在图标后方（紧凑形，
+   iPad 宽 tab 下也只包住图标，不会拉成横跨整格的长条） */
+.pill {
+  position: absolute;
+  top: 8rpx;
+  left: 50%;
+  width: 72rpx;
+  height: 72rpx;
+  margin-left: -36rpx;
+  background: rgba(255, 138, 101, 0.18);
+  border-radius: 20rpx;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.tab.active .pill { opacity: 1; }
 
 .icon-wrap {
   position: relative;
+  z-index: 1;
   width: 64rpx;
   height: 64rpx;
   display: flex;
@@ -32,29 +54,12 @@
   width: 46rpx;
   height: 46rpx;
   position: relative;
-  z-index: 2;
-}
-
-/* 选中时垫在 emoji 下方的主题色半透明超椭圆 */
-.pill {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 60rpx;
-  height: 60rpx;
-  transform: translate(-50%, -50%) scale(0.5);
-  background: rgba(255, 138, 101, 0.20);
-  border-radius: 22rpx;
-  opacity: 0;
-  transition: opacity 0.18s ease, transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 1;
-}
-.pill.on {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
 }
 
 .label {
+  position: relative;
+  z-index: 1;
   margin-top: 6rpx;
   font-size: 22rpx;
   line-height: 1;
@@ -77,7 +82,12 @@
   .tab.active .label {
     color: #FF8A65;
   }
-  .pill {
-    background: rgba(255, 138, 101, 0.28);
-  }
 }
+
+/* 平板 / 大屏：用 px 固定 Tab 栏自身尺寸，避免 rpx 在 iPad 上被放大 */
+.tabbar.tablet { padding-bottom: env(safe-area-inset-bottom); }
+.tabbar.tablet .tab { padding: 8px 0 10px; }
+.tabbar.tablet .icon-wrap { width: 52px; height: 52px; }
+.tabbar.tablet .icon { width: 28px; height: 28px; }
+.tabbar.tablet .pill { width: 58px; height: 58px; margin-left: -29px; top: 6px; border-radius: 16px; }
+.tabbar.tablet .label { font-size: 13px; }
