@@ -93,8 +93,10 @@ Page({
           color: TYPE_META[r.type].color,
           time: fmtTime(r.timestamp),
           recorder: r.recorder || null,
-          canEdit: canDel,
-          canDelete: canDel,
+          // 规则：只有「今天」的记录可修改（历史记录只读）。编辑/删除按钮仅当天显示，
+          // 仍需通过 canDel 的归属校验（仅能改自己创建的记录）。
+          canEdit: g.isToday && canDel,
+          canDelete: g.isToday && canDel,
         };
       });
       return {

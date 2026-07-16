@@ -264,6 +264,42 @@ async function getTodayRecords() {
   return all.filter((r) => dateKey(r.timestamp) === today);
 }
 
+// 取某一天的记录（日期 key 形如 'YYYY-MM-DD'）。用于「编辑把今天的记录改到历史某天」时，
+// 补拉那一天并入永久历史缓存，避免历史视图漏记。一次查询通常 1 页，分页兜底；头像走缓存出口。
+async function getRecordsByDate(dateKeyStr) {
+  const PAGE_SIZE = 20;
+  const _ = db().command;
+  const start = new Date(dateKeyStr + 'T00:00:00');
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  const query = { timestamp: _.gte(start.toISOString()).and(_.lt(end.toISOString())) };
+  try {
+    const all = [];
+    let skip = 0;
+    while (true) {
+      const res = await coll()
+        .where(query)
+        .orderBy('timestamp', 'desc')
+        .skip(skip)
+        .limit(PAGE_SIZE)
+        .get();
+      const page = res.data || [];
+      all.push(...page);
+      if (page.length < PAGE_SIZE) break;
+      skip += PAGE_SIZE;
+    }
+    const list = normalize(all);
+    await attachAvatars(list);
+    return list;
+  } catch (e) {
+    console.error('[cloud] getRecordsByDate failed:', e);
+    const err = new Error('云端读取失败：' + (e.errMsg || e.message || '请检查网络或云环境'));
+    err.raw = e;
+    throw err;
+  }
+}
+
 // 临时链接（tempFileURL）缓存：微信默认约 2 小时有效，缓存 90 分钟，
 // 避免每次切回页面都重新请求 getTempFileURL（这是读取慢的另一主因）。
 const _tempUrlCache = {};
@@ -360,6 +396,7 @@ async function getGroupedRecords() {
 module.exports = {
   getRecords,
   getRecordsToday,
+  getRecordsByDate,
   addRecord,
   updateRecord,
   deleteRecord,

@@ -3,10 +3,12 @@
 // 页面只依赖本文件，无需关心后端。所有方法均返回 Promise，方便统一 async/await。
 // 记录结构统一为 { id, type, timestamp, deviceId, recorder }（recorder 可能为 null）。
 //
-// 内存缓存（P1）：getRecords 拉回的全量记录会缓存到 _cache，
-// getTodayRecords / getGroupedRecords 直接从缓存派生，避免同一次进页面
-// 重复分页请求（分页后一次全量 = 多次 20 条查询，重复拉取代价明显）。
-// 任何写操作（增/删/改/清空）都会失效缓存；下拉刷新传 forceRefresh=true 强制重拉。
+// 缓存策略：「历史记录只读、缓存一次永久有效；只有今天的记录可增删改」。
+//   - 首次全量拉取后，所有【非今天】记录持久化到 Storage（HISTORY_KEY），之后
+//     每次打开直接命中本地缓存，不再请求云端（历史从不改变 → 缓存永不过期）。
+//   - 【今天】记录每次打开仅增量刷新（1 次小查询），保持新鲜。
+//   - 派生（d7 / 分组）从「历史 + 今天」合并结果计算，避免重复分页。
+//   - 下拉刷新传 forceRefresh=true 跳过缓存、全量重拉（用户主动操作）。
 // ============================================================
 const local = require('./storage');
 const cloud = require('./cloud');
@@ -17,103 +19,132 @@ function cloudReady() {
   return !!(USE_CLOUD && typeof wx !== 'undefined' && wx.cloud && CLOUD.ENV);
 }
 
-// —— 持久化缓存层（内存 → 本地 Storage → 云端）——
-// 设计（源自「每次打开刷新当天、其余用缓存」策略）：
-//   _fullCache 保存全量记录（内存真源）。冷启动先读 Storage 秒显；
-//   每个打开仅增量刷新「当天」记录（1 次小查询），历史记录全部命中缓存，
-//   从而把云读取从「每次打开全量分页」降到「每次打开仅当天」。
+// —— 持久化缓存层（历史永久 + 今天增量）——
+// 设计：「历史记录只读、缓存一次永久有效；只有今天的记录可增删改」。
+//   _historyCache 保存所有【非今天】记录，首次全量拉取后持久化到 Storage，
+//   之后每次打开直接命中本地缓存，不再请求云端（历史从不改变 → 缓存永不过期）。
+//   _todayCache 保存【今天】记录，每次打开增量刷新（1 次小查询）保持新鲜。
+//   跨天（如隔夜后再开）时，旧的「今天」自动并入历史缓存，无缝衔接。
+//   冷启动先读 Storage 秒显，云读取从「每次打开全量分页」降到「仅当天一次小查询」。
 //   Storage 持久化跨冷启动有效（wx.setStorageSync 重启仍在，单 key ≤1MB/总 ≤10MB）。
 const CACHE_PREFIX = 'potty_cache_' + (CLOUD.ENV || 'local') + '_';
-const FULL_KEY = CACHE_PREFIX + 'all';
+const HISTORY_KEY = CACHE_PREFIX + 'history';  // 永久历史缓存（非今天）
+const TODAY_KEY = CACHE_PREFIX + 'today';      // 今天记录（仅冷启动秒显用，每次打开重刷）
 const TODAY_COOLDOWN_MS = 30 * 1000; // 同会话内短时间重复 onShow 不去云端（避免切 tab 狂刷）
 
-let _fullCache = null;     // 全量记录（内存，真源）
-let _memBuckets = {};      // 派生桶（d7 等）内存缓存
-let _lastTodayRefresh = 0; // 上次刷新当天记录的时间戳（内存，冷启动归零）
+let _historyCache = null;     // 非今天记录（永久，命中 Storage 即不再请求云端）
+let _todayCache = null;       // 今天记录（内存，每次打开刷新）
+let _todayDateKey = '';       // _todayCache 对应的日期 key（用于跨天滚动检测）
+let _memBuckets = {};         // 派生桶（d7 / 分组等）内存缓存
+let _lastTodayRefresh = 0;    // 上次刷新当天记录的时间戳（内存，冷启动归零）
 
+function _todayKeyNow() { return local.dateKey(Date.now()); }
 function _storageSizeOk(list) {
   try { return JSON.stringify(list).length < 900 * 1024; } catch (e) { return false; }
 }
-function loadFullFromStorage() {
+
+// 历史缓存：永久持久化（历史从不改变，命中即不再请求云端）
+function loadHistoryFromStorage() {
   try {
-    const c = wx.getStorageSync(FULL_KEY);
-    if (c && Array.isArray(c.data)) { _fullCache = c.data; return true; }
+    const c = wx.getStorageSync(HISTORY_KEY);
+    if (c && Array.isArray(c.data)) { _historyCache = c.data; return true; }
   } catch (e) { /* ignore */ }
   return false;
 }
-function saveFullToStorage() {
-  if (!_fullCache || !_storageSizeOk(_fullCache)) return; // 超大不持久化，回退云端直读
-  try { wx.setStorageSync(FULL_KEY, { ts: Date.now(), data: _fullCache }); } catch (e) { /* ignore */ }
+function saveHistoryToStorage() {
+  if (!_historyCache || !_storageSizeOk(_historyCache)) return; // 超大不持久化，回退云端直读
+  try { wx.setStorageSync(HISTORY_KEY, { ts: Date.now(), data: _historyCache }); } catch (e) { /* ignore */ }
 }
+
+// 今天缓存：仅作冷启动秒显；日期改变或刷新后会被云端覆盖
+function loadTodayFromStorage() {
+  try {
+    const c = wx.getStorageSync(TODAY_KEY);
+    if (c && Array.isArray(c.data)) {
+      _todayCache = c.data;
+      _todayDateKey = c.dateKey || _todayKeyNow();
+      return true;
+    }
+  } catch (e) { /* ignore */ }
+  return false;
+}
+function saveTodayToStorage() {
+  if (!_todayCache) return;
+  try { wx.setStorageSync(TODAY_KEY, { dateKey: _todayDateKey, data: _todayCache }); } catch (e) { /* ignore */ }
+}
+
 function invalidateCache() {
   _memBuckets = {};
-  _fullCache = null;
-  try { wx.removeStorageSync(FULL_KEY); } catch (e) { /* ignore */ }
+  _historyCache = null;
+  _todayCache = null;
+  _todayDateKey = '';
+  try { wx.removeStorageSync(HISTORY_KEY); } catch (e) { /* ignore */ }
+  try { wx.removeStorageSync(TODAY_KEY); } catch (e) { /* ignore */ }
 }
 function cacheKey(days) {
   return days ? 'd' + days : 'all';
 }
 
-// 确保 _fullCache 已就绪：优先内存 → Storage →（必要时）云端/本地全量拉取。
+// 确保缓存就绪：优先内存历史 → Storage 历史（永久）→（必要时）云端/本地全量拉取并拆分。
 // 返回 true 表示本次做了全量拉取（已含当天，无需再增量刷当天）。
-async function ensureFullLoaded(forceRefresh) {
-  if (_fullCache && !forceRefresh) return false;
-  if (!_fullCache) {
-    if (loadFullFromStorage() && !forceRefresh) { /* 命中 Storage，跳过云端 */ }
-    else {
-      _fullCache = cloudReady() ? await cloud.getRecords() : local.getRecords();
-      saveFullToStorage();
+async function ensureLoaded(forceRefresh) {
+  let didFull = false;
+  if (forceRefresh || !_historyCache) {
+    if (!forceRefresh && loadHistoryFromStorage()) {
+      // 命中永久历史缓存，跳过云端全量拉取
+    } else {
+      const all = cloudReady() ? await cloud.getRecords() : local.getRecords();
+      _historyCache = all.filter((r) => local.dateKey(r.timestamp) !== _todayKeyNow());
+      _todayCache = all.filter((r) => local.dateKey(r.timestamp) === _todayKeyNow());
+      _todayDateKey = _todayKeyNow();
+      saveHistoryToStorage();
+      saveTodayToStorage();
       _lastTodayRefresh = Date.now();
-      return true;
+      didFull = true;
     }
-  } else if (forceRefresh) {
-    _fullCache = cloudReady() ? await cloud.getRecords() : local.getRecords();
-    saveFullToStorage();
-    _lastTodayRefresh = Date.now();
-    return true;
   }
-  return false;
+  if (!_todayCache) loadTodayFromStorage(); // 冷启动秒显（可能来自上一会话的「今天」）
+  return didFull;
 }
 
-// 增量刷新当天记录：仅查 timestamp >= 今天0点，merge 进 _fullCache。
-// force=true 时忽略冷却（写操作后强制同步）。
+// 增量刷新当天记录：仅查 timestamp >= 今天0点，覆盖 _todayCache。
+// 跨天场景：旧的「今天」自动并入历史缓存（历史永久有效），再拉取新的一天。
+// force=true 时忽略冷却（写操作后强制同步）。本地模式从本地存储取今天。
 async function refreshTodayIfNeeded(force) {
   const now = Date.now();
+  const curKey = _todayKeyNow();
+  // 跨天：上一会话的「今天」现在已成历史，并入永久缓存
+  if (_todayCache && _todayDateKey && _todayDateKey !== curKey) {
+    _historyCache = (_historyCache || []).concat(_todayCache);
+    saveHistoryToStorage();
+    _todayCache = null;
+    _todayDateKey = curKey;
+  }
   if (!force && now - _lastTodayRefresh < TODAY_COOLDOWN_MS) return;
   _lastTodayRefresh = now;
   try {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     const startISO = d.toISOString();
-    const todays = cloudReady() ? await cloud.getRecordsToday(startISO) : [];
-    const tk = local.dateKey(Date.now());
-    _fullCache = (_fullCache || []).filter((r) => local.dateKey(r.timestamp) !== tk).concat(todays);
-    saveFullToStorage();
+    const todays = cloudReady()
+      ? await cloud.getRecordsToday(startISO)
+      : local.getRecords().filter((r) => local.dateKey(r.timestamp) === curKey);
+    _todayCache = todays;
+    _todayDateKey = curKey;
+    saveTodayToStorage();
   } catch (e) {
     console.warn('[store] refresh today failed, keep cache:', e);
   }
 }
 
-// 写操作后同步：add/update 只刷当天（便宜，变化通常在今天）；
-// delete/clear 全量重拉（保证历史删除即时生效）。
-async function syncAfterWrite(full) {
-  _memBuckets = {};
-  if (full) {
-    _fullCache = cloudReady() ? await cloud.getRecords() : local.getRecords();
-  } else {
-    await refreshTodayIfNeeded(true);
-  }
-  saveFullToStorage();
-}
-
-// 拉取记录（带三层缓存）。forceRefresh=true 时跳过缓存全量重拉。
+// 拉取记录（历史永久缓存 + 今天增量）。forceRefresh=true 时跳过缓存全量重拉。
 // days：可选，传数字 N 仅返回最近 N 天（首页优化）。
 async function fetchRecords(forceRefresh, days) {
   const key = cacheKey(days);
   if (_memBuckets[key] && !forceRefresh) return _memBuckets[key];
-  const didFull = await ensureFullLoaded(forceRefresh);
+  const didFull = await ensureLoaded(forceRefresh);
   if (!forceRefresh && !didFull) await refreshTodayIfNeeded(false);
-  let out = _fullCache || [];
+  let out = (_historyCache || []).concat(_todayCache || []);
   if (days) {
     const cutoff = new Date(Date.now() - days * 86400000).toISOString();
     out = out.filter((r) => r.timestamp >= cutoff);
@@ -172,12 +203,11 @@ module.exports = {
     _memBuckets = {};
     if (cloudReady()) {
       const rec = await cloud.addRecord(type, recorder);
-      await syncAfterWrite(false);
+      await refreshTodayIfNeeded(true); // 新记录必属今天，只刷今天
       return rec;
     }
     const rec = local.addRecord(type, recorder);
-    _fullCache = local.getRecords();
-    saveFullToStorage();
+    await ensureLoaded(true);
     return rec;
   },
 
@@ -185,12 +215,11 @@ module.exports = {
     _memBuckets = {};
     if (cloudReady()) {
       await cloud.deleteRecord(id);
-      await syncAfterWrite(true);
+      await refreshTodayIfNeeded(true); // 只有今天的记录可被删，仅刷今天
       return;
     }
     local.deleteRecord(id);
-    _fullCache = local.getRecords();
-    saveFullToStorage();
+    await ensureLoaded(true);
     return;
   },
 
@@ -198,12 +227,26 @@ module.exports = {
     _memBuckets = {};
     if (cloudReady()) {
       await cloud.updateRecord(id, updates);
-      await syncAfterWrite(true); // 编辑可能针对历史记录，全量重拉保证即时生效
+      await refreshTodayIfNeeded(true); // 修改后的记录默认仍在今天，只刷今天
+      // 仅当编辑把时间改到了历史某天：补拉那一天并入永久历史缓存，避免历史视图漏记
+      if (updates && updates.timestamp) {
+        const newKey = local.dateKey(updates.timestamp);
+        if (newKey !== _todayKeyNow()) {
+          try {
+            const thatDay = await cloud.getRecordsByDate(newKey);
+            _historyCache = (_historyCache || [])
+              .filter((r) => local.dateKey(r.timestamp) !== newKey)
+              .concat(thatDay);
+            saveHistoryToStorage();
+          } catch (e) {
+            console.warn('[store] fetch moved date failed, history may refresh on next open:', e);
+          }
+        }
+      }
       return;
     }
     local.updateRecord(id, updates);
-    _fullCache = local.getRecords();
-    saveFullToStorage();
+    await ensureLoaded(true);
     return;
   },
 
@@ -214,8 +257,11 @@ module.exports = {
     } else {
       local.clearAllRecords();
     }
-    _fullCache = [];
-    saveFullToStorage();
+    _historyCache = [];
+    _todayCache = [];
+    _todayDateKey = '';
+    saveHistoryToStorage();
+    saveTodayToStorage();
     return;
   },
 
