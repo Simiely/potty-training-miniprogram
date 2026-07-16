@@ -1,6 +1,5 @@
 const { LOCK_PASSWORD, STORAGE_KEYS } = require('../../config');
 const { detectTablet } = require('../../utils/device');
-const app = getApp();
 
 Page({
   data: {
@@ -16,6 +15,11 @@ Page({
   },
 
   onLoad() {
+    // 注意：不能把 getApp() 放在模块顶层——在 custom-tab-bar + lazyCodeLoading 下，
+    // 页面模块可能在 App() 完成前被 require，顶层 getApp() 会返回 undefined，
+    // 进而 onLoad 访问 app.globalData 崩溃。改为在 onLoad 内获取（页面生命周期
+    // 一定晚于 App 初始化完成，此时 getApp() 必然有效，与其他页面做法一致）。
+    const app = getApp();
     // 已校验过（授权 + 密码正确）则直接进入。
     // 关键：switchTab 必须延后到首帧渲染之后（setTimeout 0 / nextTick），
     // 否则在 custom-tab-bar + lazyCodeLoading 下会触发
