@@ -84,8 +84,13 @@
   }
   /* Dock 在深色背景下用浅色描边 + 更深阴影，避免与页面底色糊在一起 */
   .tabbar.tablet {
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    background: rgba(34, 27, 22, 0.5);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.22),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -101,9 +106,15 @@
   padding: 8px 16px;
   padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
   bottom: calc(env(safe-area-inset-bottom) + 18px);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  /* 磨砂玻璃：半透明暖色底 + 背景模糊；高光描边用浅色边框 + 顶部 inset 高光，模拟 macOS Dock 反光 */
+  background: rgba(255, 248, 242, 0.55);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 24px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.16),
+              inset 0 1px 0 rgba(255, 255, 255, 0.7),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 .tabbar.tablet .tab {
   flex: 0 0 auto;          /* 不拉伸，3 个 icon 并排聚拢居中 */
