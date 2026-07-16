@@ -48,6 +48,19 @@ git clone https://github.com/Simiely/potty-training-miniprogram.git
 
 ---
 
+## 大屏 / iPad 适配
+
+在 iPad / 大屏设备上，小程序以真实逻辑尺寸运行并自动切换为「仪表盘」布局，充分利用大屏空间：
+
+- **记录页**：顶部 4 列 KPI（今日统计）+ 下方 2 列主体（左 = 快速记录 + 预测，右 = 今日时间线）
+- **分析页**：双栏（左 = 排便规律，右 = 近 7 天图表）
+- **历史页**：日期分组双列网格，一屏看更多
+- **密码锁屏**：居中限宽，指纹 / 面容解锁
+
+实现要点（详细踩坑见 [DEV.md](./DEV.md) #16）：`app.json` 启用 `"resizable": true`；用 `screenWidth`（物理屏宽，iPad 横屏≈1366 / 竖屏≈1024）判定平板并挂 `.tablet` 类；平板样式全部用 `.tablet` 后代选择器 + **px** 覆盖（微信小程序内 CSS `@media` 在 iPad 上不命中，且 `windowWidth` 返回的是手机比例绘制区宽度，均不可靠）。
+
+---
+
 ## 目录结构
 
 ```
@@ -82,6 +95,7 @@ git clone https://github.com/Simiely/potty-training-miniprogram.git
 - HarmonyOS 兼容（`wx.getDeviceInfo()` 平台检测）
 - SOTER 生物认证（指纹/面容）
 - 数据层开放：`store.js` 一行配置切换本地/云端
+- iPad / 大屏自适应：`resizable` + JS 响应式 `.tablet` 类 + px 覆盖（绕过 CSS 媒体查询在 iPad 不命中的坑）
 
 ---
 

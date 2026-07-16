@@ -2,6 +2,9 @@
 
 本文档记录了开发过程中遇到的棘手 Bug 和架构决策，供后续维护参考。
 
+> **关于标记**：部分条目标注「working copy」—— 其方案已在本地工作副本（`Documents/xiaochengxu/potty-training-miniprogram-main`）中实现，但**尚未推送到本 GitHub 仓库**（仓库当前快照仍是基础版本：例如 `app.json` 未启用 `resizable`、tabBar 仍为早期 `.pill.on` 写法）。推送对应代码后文档即可与仓库完全对齐。未标注的条目均与仓库当前代码一致。
+> iPad 大屏适配、渲染/路由错误根治、openid 探针法、云读取回归等均为 working copy 方案，见 #16–#22。
+
 ---
 
 ## 1. `type="nickname"` 输入框导致保存按钮失效
@@ -55,6 +58,8 @@
 **最终决定**：不处理。这是框架级问题，不影响任何功能，微信审核不检查此项。DevTools 模拟器中会出现，真机上不一定复现。
 
 **涉及文件**：无需修改（已全部 revert）
+
+> **⚠️ 更正（working copy）**：此条结论在后续 working copy 中被推翻。`lazyCodeLoading + custom-tab-bar` 引发的首帧 setData 警告**可根治**——彻底删除 tabBar 的 `pageLifetimes.show` / `ready` / `attached` 首帧前 setData，高亮改由「点击 tab 的 `switchTab` 内 `setData` + 三页 `onShow` 调 `getTabBar().setData`」驱动即可消除。详见 #20。仓库当前快照仍是「不处理」状态。
 
 ---
 
@@ -170,6 +175,8 @@
 **涉及文件**：`utils/cloud.js`（新增 `getCurrentOpenid`、透传 `creatorOpenid`）、`pages/history/history.js`（`canDelete`/`canEdit` 逻辑）、`utils/store.js`
 
 **参考**：`cloudfunctions/getOpenid/` 已删除（改用客户端检测）
+
+> **⚠️ 更正（working copy）**：多数票检测在多人混合记录场景下会把当前用户误判为出现最多的他人 openid（自己看不到删除按钮、他人误显删除图标）。working copy 已改为更可靠的「探针法」检测 openid，见 #19。
 
 ---
 
@@ -293,3 +300,136 @@ function dateKey(ts) {
 - **游客模式限制**：`touristappid` 下 `wx.operateWXData`、`webapi_getwxaasyncsecinfo` 等 API 返回模拟数据/报错，换真实 AppID 后消失
 - **查看当前 openid**：Console 中搜索 `[cloud]` 关键词
 - **排查按钮不显示**：Console 中搜索 `[history]` 或检查 WXML 面板中 `hd-actions` 节点的子元素
+
+---
+
+## 16. iPad 大屏适配：为什么「改了没变」反复发生（working copy）
+
+**现象**：加了 `@media(min-width:768px)` 平板样式、改了 px，iPad 上界面始终不变、字巨大、没利用屏幕。
+
+**排查链（按顺序，每一层都是真因）**：
+
+1. **缺 `resizable`**：`app.json` 没有 `"resizable": true` → iPad 被微信当成 iPhone 等比放大运行（两侧黑边 + 手机布局拉满全屏）。这是「没利用屏幕 / 字太大」的第一层根因。
+2. **CSS 媒体查询在 iPad 小程序里不命中**：实测 `@media(min-width:768px)` 在微信 / iPad 模拟器下**不触发**（不是没落盘，是断点永远不满足），写在 @media 里的所有平板覆盖都无效。
+3. **`windowWidth` 不是物理宽**：`wx.getWindowInfo().windowWidth` 在 iPad 上返回的是被微信限制为**手机比例**的「绘制区域宽度」（约 375~631px），**不是 iPad 物理宽**。所以 JS 用 `windowWidth>=768` 判定平板也永远 false。
+
+**正确做法（最终落地）**：
+
+- 判定平板用 **`screenWidth`**（物理屏总宽：iPad 横屏≈1366 / 竖屏≈1024，均≥768，且不受绘制区域缩放影响），回退 `screenWidth || windowWidth || 375`。
+- 每个页面 `onLoad` 读 `screenWidth` → `setData({uiMode:'tablet'|'phone'})`，`onResize` 重算（支持旋转/分屏）。
+- wxml 根节点挂 `{{uiMode}}`；所有平板样式写成 **`.tablet` 后代选择器**（`.tablet .appbar-title`、`.tablet .dash` …），由 JS 挂的类触发，**100% 可靠**，彻底绕开媒体查询。
+- 全局 `.content` 限宽也从 `@media` 改为 `.tablet .content`。
+
+**额外坑**：页面自身 wxss 里的同名基础规则会**覆盖**全局 `@media` 覆盖（源码顺序）。平板覆盖必须写进各页**自身**的 `.tablet` 块，不能只放全局 `app.wxss`。之前把 `.appbar/.appbar-title/.page` 的 px 覆盖放全局 → 被页面基础规则反超 → 顶栏仍走 rpx 巨字。
+
+**经验**：微信小程序内做响应式，**优先 JS 判定 + 类切换，不要迷信 CSS 媒体查询**。
+
+**涉及文件（working copy）**：`app.json`、`utils/device.js`、四个页面 `js/wxml/wxss`、`app.wxss`。
+
+---
+
+## 17. rpx 在 iPad 上被放大 → 平板必须用 px 覆盖（working copy）
+
+**现象**：`resizable` 后 iPad 以真实逻辑尺寸运行，但内容仍整体偏大。
+
+**根因**：rpx 始终按屏宽缩放。iPad 占满屏时 1rpx≈1.x px（约 1.82），所有 rpx 字号/间距被等比放大 → 字巨大、padding 溢出。
+
+**修复**：平板态（`.tablet`）下用 **px** 重写关键字号 / 卡片 / 间距 / tabBar 自身尺寸（`.tabbar.tablet` 也要单独 px 覆盖）。
+
+**经验**：凡是「iPad 上看起来太大」基本都是漏了某处 rpx 的 px 覆盖；逐元素补 `.tablet` 覆盖即可。
+
+**涉及文件（working copy）**：`app.wxss`、各页 `wxss`、`custom-tab-bar/index.wxss`。
+
+---
+
+## 18. 底部 tab 选中垫（pill）变成长条（working copy）
+
+**现象**：选中某个 tab 时，图标后的高亮垫变成横跨整格的「长条」，而不是紧凑地包住图标。
+
+**根因**：`.pill` 用 `left/right` 内缩实现 → 垫片宽度 = 整个 tab 格宽减去内缩。手机每格窄（≈125rpx）不明显；iPad 每格≈455px → 垫片被拉成横跨整格的长条。
+
+**修复**：`.pill` 改为**居中紧凑圆角垫**——`position:absolute; left:50%; margin-left:-N; width/height:固定值; top:固定值; border-radius`（手机 72rpx、平板 58px），只包住图标，不再随 tab 宽度拉伸。
+
+**经验**：任何「想包住某个元素」的背景层，绝不要用 `left/right` 内缩去撑满父容器；用固定宽高 + 居中。
+
+**涉及文件（working copy）**：`custom-tab-bar/index.wxss`。
+
+---
+
+## 19. openid 检测：多数票 → 探针法（working copy，supersede #11）
+
+**现象（见 #11 多数票方案的缺陷）**：多人记录混合且他人记录更近/更多时，`getCurrentOpenid()` 用最近 10 条多数票把当前用户误判成出现最多的他人 openid → 自己的记录 `canDelete=false`（看不到删除按钮），被误判用户的记录 `canDelete=true`（误显删除图标）。完全吻合「自己删不了、别人误显删除图标」。
+
+**修复（探针法，无需部署云函数）**：
+
+- `detectOpenidByProbe()`：add 一条临时记录（`_probe:true`）→ 读其自动注入的 `_openid`（必为当前账号）→ 立即 remove，零残留、100% 可靠。
+- `getCurrentOpenid()` 优先级：内存 → storage → 探针法探测并写回。
+- `normalize()` 增加 `filter(r => !r._probe)` 双保险。
+- 探针前先 `where({_probe:exists})` 清理历史残留，避免 remove 失败累积垃圾。
+
+**涉及文件（working copy）**：`utils/cloud.js`、`pages/history/history.js`。
+
+---
+
+## 20. 渲染层错误 / Page route 错误的最终根治（working copy）
+
+**现象**：
+
+- `[渲染层错误] Expected updated data but get first rendering data`（冷启动 / 切 tab 弹红字，有时白屏）
+- `[Page route 错误] routeDone with a webviewId X is not found`（切 tab 时）
+
+**根因（统一）**：**首帧渲染期 setData / 首帧期 wx.switchTab**。
+
+- 渲染错误：custom-tab-bar 在首帧渲染完成前（attached / ready / pageLifetimes.show）调 `setData({selected})`，与首帧提交竞争。
+- 路由错误：入口 lock 页 `onLoad` 同步 `wx.switchTab` 进入 record，此时入口 webview 尚未注册完成，switchTab 销毁它，框架随后回送 routeDone 给已死的 webview → not found。
+
+**最终修复（working copy，已根治）**：
+
+- 高亮**仅**由点击 tab 的 `switchTab` 内 `setData({selected})` + 三页 `onShow` 调 `getTabBar().setData({selected:0/1/2})` 驱动；**彻底删除** custom-tab-bar 的 `pageLifetimes.show` / `ready` / `attached` 首帧前 setData。冷启动进记录页 selected 默认 0 与首页高亮一致，无需首帧前修正。
+- 锁定 / 跳转类导航全部推迟到首帧后：`wx.nextTick` 或 `setTimeout(…,0)` 包裹 `wx.switchTab`。
+
+**经验**：微信小程序里 **`custom-tab-bar` + `lazyCodeLoading` 绝对不要在首帧渲染完成前 setData**（attached / ready / pageLifetimes.show 都不行，`wx.nextTick` 在某些组合下也不可靠）；所有跨页导航用 `setTimeout(0)` / `nextTick` 推迟。
+
+**注意**：开发者工具模拟器对 `custom-tab-bar + resizable` 的 `routeDone webviewId not found` 时序告警为**真机不出现、不影响功能**；若必须模拟器零告警，唯一彻底方案是弃用 custom-tab-bar 改用原生 tabBar（会失去自定义高亮样式），由产品决策。
+
+**涉及文件（working copy）**：`custom-tab-bar/index.js`、`pages/{record,analysis,history}.js`、`pages/lock/lock.js`、`app.js`。
+
+---
+
+## 21. 云数据库读取慢 / 拿不到数据（working copy）
+
+**现象**：把 `getRecords` 改为 `count()` + `Promise.all` 并行分页后，开发版既慢又偶发「拿不到数据」（无报错、无 toast、页面静默空）。
+
+**根因**：
+
+1. `getRecords` 串行 `await` 每一页（while 循环逐页 skip）→ 数据量大时 N 次网络往返叠加成秒级卡顿（原慢根因）。
+2. `count()` 在部分基础库不应用 `where({timestamp:_.exists(true)})` 过滤 → 返回 total:0 → 函数直接 `return []`；store 把 `[]` 缓存进 `_cache`，同会话内反复返回空（静默空数据根因）。
+3. `refreshRecorder` 每次切回记录页对**每个头像逐个串行** `getTempFileURL`（N+1 请求）。
+
+**修复（working copy，对标已发布体验版）**：
+
+- `getRecords` 回归**纯顺序分页**（`while` 逐页 `await`，直到某页 `page.length<20` 停止），带 `where({timestamp:_.exists(true)})` 恒真条件 + `catch` 抛错提示；不依赖 `count()`。数据量 <1000 用 skip 分页开销可忽略，且稳定。
+- 头像批量：`toTempUrlBatch(fileIds)` 一次请求转多个 + `_tempUrlCache` 内存缓存（90 分钟 TTL），`refreshRecorder` 改用批量，切回页 90 分钟内零请求。
+
+**经验**：`count()` + 并行在如厕数据量级提速有限且兼容性有雷；**稳定优先于微优化**。头像 N+1 请求用批量 + 缓存解决。
+
+**涉及文件（working copy）**：`utils/cloud.js`、`pages/record/record.js`。
+
+---
+
+## 22. 元问题：修复「没落盘」与真实目录 vs 沙箱副本（working copy）
+
+**现象**：多轮「改了代码但界面没变」，反复排查才发现改动没真正写进磁盘，或改错了副本。
+
+**根因**：
+
+1. Read / Edit 工具并行提交时曾报成功但磁盘未落盘（与历史「改了没变」同类坑）。
+2. 真实工作副本在 `Documents/xiaochengxu/potty-training-miniprogram-main`，而 workbuddy 会话目录下有一份 sandbox 副本，两者混淆 → 改了沙箱、测的是真本。
+
+**经验 / 流程**：
+
+- 任何「改了没变」先 `grep` / `cat` 磁盘真实文件确认是否落盘，再怀疑逻辑。
+- 明确唯一真实副本路径，不要对沙箱副本做功能修改（沙箱改动用户看不到）。
+- 多文件改动后逐个 `node --check` + 重新编译验证。
+
+**涉及文件**：流程规范，无特定代码文件。
