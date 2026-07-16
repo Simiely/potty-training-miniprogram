@@ -1,0 +1,15 @@
+{
+  "name": "potty-training-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "云端配置/初始化脚本。setup.js 与 deploy.js 仅依赖 Node 内置模块；init-cloud.js 需先 cd scripts && npm install 安装下方依赖后运行（脚本内已对缺失依赖做友好提示）。",
+  "scripts": {
+    "setup": "node setup.js",
+    "deploy": "node deploy.js",
+    "init-cloud": "node init-cloud.js"
+  },
+  "dependencies": {
+    "@cloudbase/node-sdk": "^2.0.0",
+    "@cloudbase/manager-sdk": "^2.0.0"
+  }
+}

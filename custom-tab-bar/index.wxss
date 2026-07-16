@@ -70,11 +70,11 @@
   font-weight: 600;
 }
 
-/* 深色模式：跟随系统，暖色暗调 */
+/* 深色模式：跟随系统，暖色暗调（背景/边框统一用主题变量，与全站一致） */
 @media (prefers-color-scheme: dark) {
   .tabbar {
-    background: #221B16;
-    border-top-color: #3A302A;
+    background: var(--card-bg);
+    border-top-color: var(--border);
   }
   .label {
     color: #B0A597;

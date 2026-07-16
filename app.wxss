@@ -156,8 +156,6 @@ page {
   --t-fs-lg: 17px;
   --t-num: 34px;
   --t-num-lg: 44px;
-  /* 侧边导航宽度（Web App 大屏模式） */
-  --t-nav-w: 268px;
 }
 .tablet .content {
   max-width: none;

@@ -72,7 +72,7 @@
     </view>
 
     <view class="card">
-      <view class="title" style="margin-bottom:24rpx;">🔮 预测面板</view>
+      <view class="title pred-title">🔮 预测面板</view>
 
       <block wx:if="{{!prediction.hasEnough}}">
         <view class="empty-center">📝 至少需要记录 2 次大便才能进行预测

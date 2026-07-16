@@ -171,6 +171,10 @@
 .ebtn-save { background: #FF8A65; color: #fff; }
 .ebtn-save:active { background: #FB7B4B; }
 
+/* 预测面板标题：手机 rpx，平板用 px 覆盖（避免 iPad 上 rpx 被放大导致间距过大） */
+.pred-title { margin-bottom: 24rpx; }
+.tablet .pred-title { margin-bottom: 16px; }
+
 /* 预测面板 */
 .pred-window {
   text-align: center; padding: 28rpx; border-radius: 28rpx; margin-bottom: 28rpx;

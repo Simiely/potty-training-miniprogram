@@ -100,10 +100,13 @@ Page({
   },
 
   async _loadData(forceRefresh) {
-    const today = await store.getTodayRecords(forceRefresh);
+    // 首页只加载最近 7 天（今日统计 + 预测都从中派生），避免每次进页面全量拉取拖慢首屏。
+    const recent = await store.getRecords(forceRefresh, 7);
+    const todayKey = store.dateKey(Date.now());
+    const todayList = recent.filter((r) => store.dateKey(r.timestamp) === todayKey);
     const counts = { pee: 0, poop: 0, underwear: 0, diaper: 0 };
-    today.forEach((r) => counts[r.type]++);
-    const timeline = today
+    todayList.forEach((r) => counts[r.type]++);
+    const timeline = todayList
       .slice()
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
       .map((r) => ({
@@ -119,8 +122,7 @@ Page({
     const d = new Date();
     const todayLabel = `${d.getMonth() + 1}月${d.getDate()}日 ${WEEKDAYS[d.getDay()]}`;
 
-    const all = await store.getRecords();
-    const pred = predictNextPoop(all);
+    const pred = predictNextPoop(recent);
     const conf = confidenceConfig[pred.confidence] || confidenceConfig.low;
     const now = new Date();
     let windowState = 'default';

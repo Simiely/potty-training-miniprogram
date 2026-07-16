@@ -135,15 +135,20 @@ function normalize(list) {
 // 正好落在页边界」时漏掉与末条同时间戳的其余记录。数据量 <1000 时 skip 开销
 // 可忽略;若以后量很大再迁移到云函数端(服务端无 20 条限制)。
 // where({timestamp: exists(true)}) 是恒真条件,仅用于规避空查询「扫全表」告警。
-async function getRecords() {
+// days：可选。传入数字 N 时只取最近 N 天（首页优化，减少云读取量）；
+// 不传则全量（历史/分析/清空使用）。ISO 字符串字典序与时间序一致，gte 可直接比较。
+async function getRecords(days) {
   const PAGE_SIZE = 20;
   const _ = db().command; // 注意: db 是函数,必须用 db().command
+  const query = days
+    ? { timestamp: _.gte(new Date(Date.now() - days * 86400000).toISOString()) }
+    : { timestamp: _.exists(true) };
   try {
     const all = [];
     let skip = 0;
     while (true) {
       const res = await coll()
-        .where({ timestamp: _.exists(true) })
+        .where(query)
         .orderBy('timestamp', 'desc')
         .skip(skip)
         .limit(PAGE_SIZE)
@@ -196,11 +201,19 @@ async function updateRecord(id, updates) {
 }
 
 // 云数据库无「按条件批量删」客户端 API，逐条删（受集合权限约束，仅能删自己创建的）。
+// 必须先按当前账号 openid 过滤，否则会尝试删他人记录（集合权限「仅创建者可写」→ 拒绝），
+// 导致 failed>0 误报失败；且弹窗文案承诺「仅删你创建的」，故按 creatorOpenid 严格过滤。
 async function clearAllRecords() {
+  const myOpenid = await getCurrentOpenid();
+  if (!myOpenid) {
+    // 无法可靠识别当前账号时，宁可报错也不假成功（避免「清空成功」却没删任何东西）
+    throw new Error('无法识别当前账号，请联网后重试');
+  }
   const list = await getRecords();
+  const mine = list.filter((r) => r.creatorOpenid === myOpenid);
   let failed = 0;
   await Promise.all(
-    list.map((r) => coll().doc(r.id).remove().catch(() => { failed += 1; }))
+    mine.map((r) => coll().doc(r.id).remove().catch(() => { failed += 1; }))
   );
   // 不再静默吞错：有失败就抛出，让页面提示用户，避免误报「已清空成功」
   if (failed > 0) {

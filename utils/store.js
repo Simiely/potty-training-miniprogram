@@ -17,20 +17,33 @@ function cloudReady() {
   return !!(USE_CLOUD && typeof wx !== 'undefined' && wx.cloud && CLOUD.ENV);
 }
 
-// —— 内存缓存 ——
-let _cache = null;
+// —— 内存缓存（按时间维度分桶）——
+// key = 'all' 表示全量（历史/分析/清空使用）；key = 'd'+N 表示最近 N 天（首页预测使用）。
+// 首页只拉 7 天、历史/分析拉全量，两者缓存互不污染，且首页不会因拉全量拖慢首屏。
+let _cache = {};
 
 function invalidateCache() {
-  _cache = null;
+  _cache = {};
 }
 
-// 拉取全量记录（带缓存）。forceRefresh=true 时跳过缓存重新拉取。
-function fetchRecords(forceRefresh) {
-  if (_cache && !forceRefresh) return Promise.resolve(_cache);
-  const p = cloudReady() ? cloud.getRecords() : Promise.resolve(local.getRecords());
+function cacheKey(days) {
+  return days ? 'd' + days : 'all';
+}
+
+// 拉取记录（带分桶缓存）。forceRefresh=true 时跳过缓存重新拉取。
+// days：可选，传入数字 N 时只取最近 N 天（云模式服务端加 timestamp 下界，本地模式拉全量后过滤）。
+function fetchRecords(forceRefresh, days) {
+  const key = cacheKey(days);
+  if (_cache[key] && !forceRefresh) return Promise.resolve(_cache[key]);
+  const p = cloudReady() ? cloud.getRecords(days) : Promise.resolve(local.getRecords());
   return p.then((list) => {
-    _cache = list;
-    return list;
+    let out = list;
+    if (days) {
+      const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+      out = list.filter((r) => r.timestamp >= cutoff);
+    }
+    _cache[key] = out;
+    return out;
   });
 }
 
@@ -64,8 +77,9 @@ module.exports = {
   invalidateCache,
 
   // forceRefresh：下拉刷新等场景传 true，跳过缓存
-  getRecords(forceRefresh = false) {
-    return fetchRecords(forceRefresh);
+  // days：可选，传数字 N 只取最近 N 天（首页优化）；不传则全量
+  getRecords(forceRefresh = false, days) {
+    return fetchRecords(forceRefresh, days);
   },
 
   getTodayRecords(forceRefresh = false) {
